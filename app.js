@@ -1,3 +1,5 @@
+'use strict';
+
 var express = require('express');
 var routes = require('./routes');
 var http = require('http');
@@ -28,7 +30,7 @@ app.use(bodyParser.urlencoded({
     extended: true
 }));
 app.use(bodyParser.json());
-app.use(methodOverride('X-HTTP-Method-Override'))
+app.use(methodOverride('X-HTTP-Method-Override'));
 app.use(cookieParser());
 app.use(session({
     secret: 'keyboard cat',
@@ -38,7 +40,7 @@ app.use(session({
 //app.use(app.router);
 app.use(express.static(path.join(__dirname, 'public')));
 
-if ('development' == app.get('env')) {
+if ('development' === app.get('env')) {
     app.use(errorhandler());
 }
 

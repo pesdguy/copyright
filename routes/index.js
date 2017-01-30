@@ -10,7 +10,7 @@ exports.index = function (req, res) {
 };
 
 exports.create = function (req, res) {
-	var method = req.param('method');
+    var method = req.param('method');
 
 	var payment = {
 		"intent": "sale",
@@ -18,18 +18,18 @@ exports.create = function (req, res) {
 		},
 		"transactions": [{
 			"amount": {
-				"currency": req.param('currency'),
-				"total": req.param('amount')
+                "total": "2.00",
+                "currency": "USD"
 			},
-			"description": req.param('description')
+            "description": "My awesome payment"
 		}]
 	};
 
 	if (method === 'paypal') {
 		payment.payer.payment_method = 'paypal';
 		payment.redirect_urls = {
-			"return_url": "http://pprestnode.herokuapp.com/execute",
-			"cancel_url": "http://pprestnode.herokuapp.com/cancel"
+			"return_url": "http://localhost:3000/execute",
+			"cancel_url": "http://localhost:3000/cancel"
 		};
 	} else if (method === 'credit_card') {
 		var funding_instruments = [
@@ -54,7 +54,15 @@ exports.create = function (req, res) {
 			res.render('error', { 'error': error });
 		} else {
 			req.session.paymentId = payment.id;
-			res.render('create', { 'payment': payment });
+			// res.render('create', { 'payment': payment });
+            var redirectUrl;
+            for(var i=0; i < payment.links.length; i++) {
+                var link = payment.links[i];
+                if (link.method === 'REDIRECT') {
+                    redirectUrl = link.href;
+                }
+            }
+            res.redirect(redirectUrl);
 		}
 	});
 };
