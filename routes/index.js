@@ -8,18 +8,7 @@ var userToken = "";
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 var all_items = null;
-var config = require('./config.js'), //config file contains all tokens and other private info
-    funct = require('./functions.js'); //funct file contains our helper functions for our Passport and database work
 
-var express = require('express'),
-    exphbs  = require('express-handlebars'),
-    passport = require('passport'),
-    LocalStrategy = require('passport-local'),
-    TwitterStrategy = require('passport-twitter'),
-    GoolgeStrategy = require('passport-google'),
-    FacebookStrategy = require('passport-facebook');
-// need to change to amazon cloud serveice
-//mongoose.connect('mongodb://localstoriz:prime199@ds147497.mlab.com:47497/localstoriz');
 
 mongoose.connect('mongodb://127.0.0.1:27017/db');
 var userDataSchema = new Schema({
@@ -190,63 +179,63 @@ exports.init = function (c) {
 var taskA = function(){
     var stream = UserData.find().stream();
 
-  //   stream.on('data', function (doc) {
-  //   	if (doc._doc.token){
-  // //  		console.log(doc._doc.token);
-	// 		(doc._doc['id_list']).forEach(function(item) {
-  //           	ebay.xmlRequest({
-  //       		serviceName : 'Trading',
-  //       		opType : 'GetItem',
-  //
-  //       // app/environment
-  //       		devId: '9237dc03-c040-489b-853c-4a945c1bb788',
-  //       		certId: 'shaybar-shaytest-SBX-4cd475433-571f7021',
-  //       		appId: 'SBX-cd4754332a2b-8abc-4b44-81f4-35b3',
-  //       		sandbox: true,
-  //       // per user
-  //       		authToken: doc._doc.token,
-	// 				params: {
-  //                       ItemID: item.ItemID
-  //       		}
-  //   				}, function(error, results) {
-  // //      				console.log(results);
-  //   						});
-  //
-  //           });
-  //   	}
-  //       // do something with the mongoose document
-  //   }).on('error', function (err) {
-  //       // handle the error
-  //   }).on('close', function () {
-  //   	console.log ("###### finished all mongodb vars");
-  //       // the stream is closed
-  //   });
+    stream.on('data', function (doc) {
+    	if (doc._doc.token){
+  //  		console.log(doc._doc.token);
+			(doc._doc['id_list']).forEach(function(item) {
+            	ebay.xmlRequest({
+        		serviceName : 'Trading',
+        		opType : 'GetItem',
+
+        // app/environment
+        		devId: '9237dc03-c040-489b-853c-4a945c1bb788',
+        		certId: 'shaybar-shaytest-SBX-4cd475433-571f7021',
+        		appId: 'SBX-cd4754332a2b-8abc-4b44-81f4-35b3',
+        		sandbox: true,
+        // per user
+        		authToken: doc._doc.token,
+					params: {
+                        ItemID: item.ItemID
+        		}
+    				}, function(error, results) {
+  //      				console.log(results);
+    						});
+
+            });
+    	}
+        // do something with the mongoose document
+    }).on('error', function (err) {
+        // handle the error
+    }).on('close', function () {
+    	console.log ("###### finished all mongodb vars");
+        // the stream is closed
+    });
 
 };
 
-// function addAllItems(token){
-//     var d = new Date();
-//     // searching all items 3 month ago .
-//     var newd = new Date(d.getFullYear(),d.getMonth()-3,d.getDay());
-//     ebay.xmlRequest({
-//         serviceName : 'Trading',
-//         opType : 'GetSellerList',
-//
-//         // app/environment
-//         devId: '9237dc03-c040-489b-853c-4a945c1bb788',
-//         certId: 'shaybar-shaytest-SBX-4cd475433-571f7021',
-//         appId: 'SBX-cd4754332a2b-8abc-4b44-81f4-35b3',
-//         sandbox: true,
-//         // per user
-//         authToken: token,
-//         params: {
-//             StartTimeFrom:newd.toISOString(),
-//             StartTimeTo:d.toISOString()
-//         }
-//     }, function(error, results) {
-//         console.log(results);
-//     });
-// };
+function addAllItems(token){
+    var d = new Date();
+    // searching all items 3 month ago .
+    var newd = new Date(d.getFullYear(),d.getMonth()-3,d.getDay());
+    ebay.xmlRequest({
+        serviceName : 'Trading',
+        opType : 'GetSellerList',
+
+        // app/environment
+        devId: '9237dc03-c040-489b-853c-4a945c1bb788',
+        certId: 'shaybar-shaytest-SBX-4cd475433-571f7021',
+        appId: 'SBX-cd4754332a2b-8abc-4b44-81f4-35b3',
+        sandbox: true,
+        // per user
+        authToken: token,
+        params: {
+            StartTimeFrom:newd.toISOString(),
+            StartTimeTo:d.toISOString()
+        }
+    }, function(error, results) {
+        console.log(results);
+    });
+};
 
 // change it to 24 hours !
 setInterval(taskA,10000);
