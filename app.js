@@ -11,7 +11,17 @@ var methodOverride = require('method-override');
 var session = require('express-session');
 var errorhandler = require('errorhandler');
 var router = express.Router();
+var exphbs = require('express-handlebars');
+var expressValidator = require('express-validator');
+var flash = require('connect-flash');
+var passport = require('passport');
+var LocalStrategy = require('passport-local').Strategy;
+var mongo = require('mongodb');
+var mongoose = require('mongoose');
 
+
+var routes = require('./routes/index');
+var users = require('./routes/users');
 
 var app = express();
 try {
@@ -24,19 +34,44 @@ try {
 routes.init(config);
 
 app.set('port', process.env.PORT || 5000);
-app.set('views', __dirname + '/views');
-app.set('view engine', 'jade');
+app.set('views', path.join(__dirname, 'views'));
+app.engine('handlebars', exphbs({defaultLayout:'layout'}));
+app.set('view engine', 'handlebars');
+
 app.use(bodyParser.urlencoded({
-    extended: true
+    extended: false
 }));
 app.use(bodyParser.json());
 app.use(methodOverride('X-HTTP-Method-Override'));
 app.use(cookieParser());
 app.use(session({
     secret: 'keyboard cat',
-    resave: false,
+    resave: true,
     saveUninitialized: true
 }));
+
+// init passport
+app.use(passport.initialize());
+app.use(passport.session());
+
+// Express Validator
+app.use(expressValidator({
+    errorFormatter: function(param, msg, value) {
+        var namespace = param.split('.')
+            , root    = namespace.shift()
+            , formParam = root;
+
+        while(namespace.length) {
+            formParam += '[' + namespace.shift() + ']';
+        }
+        return {
+            param : formParam,
+            msg   : msg,
+            value : value
+        };
+    }
+}));
+
 //app.use(app.router);
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -60,14 +95,29 @@ app.use(function(req, res, next){
     next();
 });
 
+// Connect Flash
+app.use(flash());
 
-app.get('/', routes.index);
-app.get('/create', routes.create);
-app.get('/execute', routes.execute);
-app.get('/cancel', routes.cancel);
-app.get('/ebay', function(req,res) {
-    res.sendfile('views/index2.html');
+// Global Vars
+app.use(function (req, res, next) {
+    res.locals.success_msg = req.flash('success_msg');
+    res.locals.error_msg = req.flash('error_msg');
+    res.locals.error = req.flash('error');
+    res.locals.user = req.user || null;
+    next();
 });
+
+app.use('/', routes);
+app.use('/users', users);
+
+// fixme: modify this so it will work
+// app.get('/', routes.index);
+// app.get('/create', routes.create);
+// app.get('/execute', routes.execute);
+// app.get('/cancel', routes.cancel);
+// app.get('/ebay', function(req,res) {
+//     res.sendfile('views/index2.html');
+// });
 
 
 

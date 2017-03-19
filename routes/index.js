@@ -8,9 +8,27 @@ var userToken = "";
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 var all_items = null;
+var express = require('express');
+var router = express.Router();
+
+// Get Homepage
+router.get('/', ensureAuthenticated, function(req, res){
+    res.render('index');
+});
+
+function ensureAuthenticated(req, res, next){
+    if(req.isAuthenticated()){
+        return next();
+    } else {
+        //req.flash('error_msg','You are not logged in');
+        res.redirect('/users/login');
+    }
+}
+
+module.exports = router;
 
 
-mongoose.connect('mongodb://127.0.0.1:27017/db');
+//mongoose.connect('mongodb://127.0.0.1:27017/db');
 var userDataSchema = new Schema({
     token: {type: String, required: true},
     id_list : { type : Array , "default" : [] }
@@ -19,6 +37,7 @@ var UserData = mongoose.model('UserData', userDataSchema);
 
 // Routes
 
+// fixme: change to router.get format ( do it for all !)
 exports.index = function (req, res) {
   res.render('index');
 };
@@ -171,7 +190,7 @@ exports.cancel = function (req, res) {
 
 // Configuration
 
-exports.init = function (c) {
+router.init = function (c) {
 	config = c;
 	paypal.configure(c.api);
 };
@@ -238,4 +257,4 @@ function addAllItems(token){
 };
 
 // change it to 24 hours !
-setInterval(taskA,10000);
+//setInterval(taskA,10000);
