@@ -23,6 +23,9 @@ var UserSchema = mongoose.Schema({
     },
     ebayToken: {
         type: String
+    },
+    transactionId: {
+        type: String
     }
 });
 

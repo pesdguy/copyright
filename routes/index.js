@@ -10,11 +10,317 @@ var Schema = mongoose.Schema;
 var all_items = null;
 var express = require('express');
 var router = express.Router();
+var User = require('../models/user');
+var PythonShell = require('python-shell');
+var imgur = require('imgur');
+var Q = require('q');
+var js2xmlparser = require("js2xmlparser");
+var xml2js = require('xml2js');
+
+
 
 // Get Homepage
 router.get('/', ensureAuthenticated, function(req, res){
     res.render('index');
 });
+
+
+router.get('/success', function(req, res){
+
+    var newUser = new User({
+        name: req.session.name,
+        email:req.session.email,
+        username: req.session.username,
+        ebayToken: req.session.ebayToken,
+        password: req.session.password,
+        transactionId:req.query['auth']
+    });
+    User.createUser(newUser, function(err, user){
+        if(err) throw err;
+        console.log(user);
+    })
+
+
+    req.flash('success_msg', 'You have been registered ');
+
+    req.session.destroy();
+
+
+    // need to add the session to data base.
+    res.redirect('/users/login');
+});
+
+
+router.get('/failure', function(req, res){
+
+
+    req.flash('error_msg', 'Subscription failure');
+
+    req.session.destroy();
+
+    res.redirect('/users/login');
+});
+
+router.get('/blacklist', function(req, res){
+
+    var itemId = req.query.itemId;
+
+    //fixme:fix result
+    var result = 1;
+
+    res.setHeader('Content-Type', 'application/json');
+    res.send(JSON.stringify({blacklist:result}));
+
+});
+
+
+router.post('/end', function(req, res){
+
+    var itemId = req.body.itemId;
+    var ebayToken = req.body.authToken;
+
+    ebay.xmlRequest({
+        serviceName : 'Trading',
+        opType : 'EndItem',
+
+        // app/environment
+        devId: '9237dc03-c040-489b-853c-4a945c1bb788',
+        certId: 'shaybar-shaytest-SBX-4cd475433-571f7021',
+        appId: 'SBX-cd4754332a2b-8abc-4b44-81f4-35b3',
+        sandbox: true,
+        // per user
+        authToken: ebayToken,
+        params: {
+            ItemID:itemId,
+            EndingReason:"NotAvailable"
+        }
+    }, function(error, results) {
+        if (error){
+            res.status(500).send({ error: error.message })
+        }
+        else {
+
+            console.log(JSON.stringify(results));
+            res.setHeader('Content-Type', 'application/json');
+            res.send(JSON.stringify(results));
+        }
+    });
+
+});
+
+router.post('/addItem', function(req, res){
+
+    //var itemJson = req.body.itemJson;
+    var ebayToken = req.body.authToken;
+    var abc = req.session.xmlJSOn;
+    //var itemJson = req.query['ItemJson'];
+
+
+
+    //var parser = new xml2js.Parser(xml2js.defaults["0.1"]);
+    var parser = new xml2js.Parser({explicitArray:false});
+
+    parser.parseString(abc, function (err, result) {
+        //console.dir(result);
+        console.log(JSON.stringify(result));
+        //res.setHeader('Content-Type', 'application/json');
+        var ItemJson = JSON.stringify(result);
+
+        var result2 = result['GetItemResponse']
+        //result2['Item']['ShippingPackageDetails']['ShippingPackage'] = 'Letter';
+        result2['Item']['Description'] = result2['Item']['Description'] +".";
+        result2['Item']['Title'] = result2['Item']['Title'] +" .";
+
+
+        //res.redirect('/addItem?ItemJson='+ItemJson.toString());
+        for (var i=0; i<allWrong.length; i++ ){
+            var res1 = goToPath(result2,allWrong[i].split("."))
+            if (res1){
+                setToValue(result2,allWrong[i])
+            }
+        }
+        ebay.xmlRequest({
+            serviceName : 'Trading',
+            opType : 'AddItem',
+
+            // app/environment
+            devId: '9237dc03-c040-489b-853c-4a945c1bb788',
+            certId: 'shaybar-shaytest-SBX-4cd475433-571f7021',
+            appId: 'SBX-cd4754332a2b-8abc-4b44-81f4-35b3',
+            sandbox: true,
+            fromXml:true,
+
+            // per user
+            authToken: ebayToken,
+            params:{
+                Item:result2['Item']
+            }
+        }, function(error, results) {
+            if (error){
+                res.status(500).send({ error: error.message })
+            }
+            else {
+
+                console.log(JSON.stringify(results));
+                res.setHeader('Content-Type', 'application/json');
+                res.send(JSON.stringify(results));
+            }
+        });
+
+
+    });
+
+
+});
+
+
+
+router.post('/reviseItem', function(req, res){
+
+    var itemId = req.body.itemId;
+    var ebayToken = req.body.authToken;
+    var Title = req.body.Title;
+    var Description = req.body.Description;
+
+    ebay.xmlRequest({
+        serviceName : 'Trading',
+        opType : 'ReviseItem',
+
+        // app/environment
+        devId: '9237dc03-c040-489b-853c-4a945c1bb788',
+        certId: 'shaybar-shaytest-SBX-4cd475433-571f7021',
+        appId: 'SBX-cd4754332a2b-8abc-4b44-81f4-35b3',
+        sandbox: true,
+        // per user
+        authToken: ebayToken,
+        params:{
+        Item: {
+            ItemID: itemId,
+            Description: Description,
+            Title: Title
+        }
+        }
+    }, function(error, results) {
+        if (error){
+            res.status(500).send({ error: error.message })
+        }
+        else {
+            console.log(JSON.stringify(js2xmlparser.parse(results)));
+            res.setHeader('Content-Type', 'application/json');
+            res.send(JSON.stringify(js2xmlparser.parse(results)));
+        }
+    });
+
+});
+
+
+router.post('/getItem', function(req, res){
+
+    var itemId = req.body.itemId;
+    var ebayToken = req.body.authToken;
+    ebay.xmlRequest({
+        serviceName : 'Trading',
+        opType : 'GetItem',
+
+        // app/environment
+        devId: '9237dc03-c040-489b-853c-4a945c1bb788',
+        certId: 'shaybar-shaytest-SBX-4cd475433-571f7021',
+        appId: 'SBX-cd4754332a2b-8abc-4b44-81f4-35b3',
+        sandbox: true,
+        raw:true,
+        // per user
+        authToken: ebayToken,
+        params: {
+            DetailLevel:"ReturnAll",
+            ItemID:itemId
+        }
+    }, function(error, results) {
+        if (error){
+            res.status(400).send({ error: error.message })
+        }
+        else {
+            var parser = new xml2js.Parser(xml2js.defaults["0.1"]);
+            parser.parseString(results, function (err, result) {
+                //console.dir(result);
+                console.log(JSON.stringify(result));
+                //res.setHeader('Content-Type', 'application/json');
+                //var ItemJson = JSON.stringify(results);
+                //res.redirect('/addItem?ItemJson='+ItemJson.toString());
+                req.session.xmlJSOn = results;
+                //res.redirect(307,'/addItem?ItemJson='+results)
+                res.redirect(307,'/addItem');
+            });
+            //console.log(JSON.stringify(results));
+            //res.setHeader('Content-Type', 'application/json');
+            //res.send(JSON.stringify(results));
+        }
+    });
+
+});
+
+
+router.post('/image' , function(req,res){
+    var options = {
+        args: JSON.stringify(req.body)
+    };
+    PythonShell.run('rotate.py', options, function (err, results) {
+        if (err) {
+            console.log(err);
+            res.sendStatus(400);
+        }
+        else {
+            // results is an array consisting of messages collected during execution
+            console.log('results: %j', JSON.stringify(results));
+            // change text and description
+            var result = req.body;
+            result.description = req.body.description;
+            result.title = req.body.title;
+            result.images = req.body.images
+
+            // upload new images and send response
+            var itemsProcessed = 0;
+            var length = result.images.length;
+            result.images.forEach(function(item){
+                item['image_name'] = item['image_name']+'_new'
+                uploadImage(item['image_name'])
+                    .then(function (json) {
+                        itemsProcessed++;
+                        item['image_link'] = json.data['link'];
+                        console.log(json.data['link']);
+                        if(itemsProcessed === length) {
+                            //fixme: add boolean by expression
+                            result.blackListExist = true;
+                            result.blackListPhrase = false;
+                            res.setHeader('Content-Type', 'application/json');
+                            res.send(JSON.stringify(result));
+                        }
+
+                    })
+                    .catch(function (err) {
+                        console.error(err.message);
+                        res.status(500).send({ error: err.message })
+                    });
+
+            });
+        }
+    });
+});
+
+// sequently uploading images .
+function uploadImage(filePath) {
+    var deferr = Q.defer();
+    imgur.setClientId('66e1481338b4654', '228a7e9dc1da979766005d523d1c60580c570a2d');
+    imgur.uploadFile(filePath+'.jpg').then(function (json) {
+        //console.log(json.data['link']);
+        deferr.resolve(json)
+    })
+        .catch(function (err) {
+            //console.error(err.message);
+            deferr.reject(err.message);
+        });
+    return deferr.promise;
+}
+
 
 function ensureAuthenticated(req, res, next){
     if(req.isAuthenticated()){
@@ -217,7 +523,7 @@ var taskA = function(){
                         ItemID: item.ItemID
         		}
     				}, function(error, results) {
-  //      				console.log(results);
+        				console.log(results);
     						});
 
             });
@@ -256,5 +562,316 @@ function addAllItems(token){
     });
 };
 
+
+
+function goToPath(array,path){
+
+    for (var i=0; i<path.length; i++){
+        if ( array[path[i]]){
+            array = array[path[i]];
+        }else{
+            return "";
+        }
+    }
+    return array;
+};
+
+function setToValue(obj, path) {
+    var i;
+    path = path.split('.');
+    for (i = 0; i < path.length - 1; i++)
+        obj = obj[path[i]];
+
+    delete obj[path[i]];
+}
 // change it to 24 hours !
 //setInterval(taskA,10000);
+
+var allWrong =[
+    "Item.BestOfferDetails.BestOfferCount",
+    "Item.BusinessSellerDetails",
+    "Item.BusinessSellerDetails.AdditionalContactInformation",
+    "Item.BusinessSellerDetails.Address",
+    "Item.BusinessSellerDetails.Address.FirstName",
+    "Item.BusinessSellerDetails.Address.LastName",
+    "Item.BusinessSellerDetails.Email",
+    "Item.BusinessSellerDetails.Fax",
+    "Item.BusinessSellerDetails.LegalInvoice",
+    "Item.BusinessSellerDetails.TermsAndConditions",
+    "Item.BusinessSellerDetails.TradeRegistrationNumber",
+    "Item.BusinessSellerDetails.VATDetails",
+    "Item.BusinessSellerDetails.VATDetails.BusinessSeller",
+    "Item.BusinessSellerDetails.VATDetails.RestrictedToBusiness",
+    "Item.BusinessSellerDetails.VATDetails.VATID",
+    "Item.BusinessSellerDetails.VATDetails.VATPercent",
+    "Item.BusinessSellerDetails.VATDetails.VATSite",
+    "Item.BuyerGuaranteePrice",
+    "Item.BuyerProtection",
+    "Item.Charity.CharityName",
+    "Item.Charity.LogoURL",
+    "Item.Charity.Mission",
+    "Item.Charity.Status",
+    "Item.ConditionDefinition",
+    "Item.ConditionDisplayName",
+    "Item.DiscountPriceInfo.PricingTreatment",
+    "Item.FreeAddedCategory",
+    "Item.FreeAddedCategory.CategoryID",
+    "Item.FreeAddedCategory.CategoryName",
+    "Item.IntegratedMerchantCreditCardEnabled",
+    "Item.IsIntermediatedShippingEligible",
+    "Item.ItemCompatibilityList.Compatibility.NameValueList.Source",
+    "Item.ItemID",
+    "Item.ItemPolicyViolation.PolicyID",
+    "Item.ItemPolicyViolation.PolicyText",
+    "Item.ItemSpecifics.NameValueList.Source",
+    "Item.ListingDetails.Adult",
+    "Item.ListingDetails.BindingAuction",
+    "Item.ListingDetails.BuyItNowAvailable",
+    "Item.ListingDetails.CheckoutEnabled",
+    "Item.ListingDetails.ConvertedBuyItNowPrice",
+    "Item.ListingDetails.ConvertedReservePrice",
+    "Item.ListingDetails.ConvertedStartPrice",
+    "Item.ListingDetails.EndTime",
+    "Item.ListingDetails.HasPublicMessages",
+    "Item.ListingDetails.HasReservePrice",
+    "Item.ListingDetails.HasUnansweredQuestions",
+    "Item.ListingDetails.RelistedItemID",
+    "Item.ListingDetails.SecondChanceOriginalItemID",
+    "Item.ListingDetails.StartTime",
+    "Item.ListingDetails.TCROriginalItemID",
+    "Item.ListingDetails.ViewItemURL",
+    "Item.ListingDetails.ViewItemURLForNaturalSearch",
+    "Item.LocationDefaulted",
+    "Item.PaymentAllowedSite",
+    "Item.PictureDetails.ExtendedPictureDetails.PictureURLs.eBayPictureURL",
+    "Item.PictureDetails.ExtendedPictureDetails.PictureURLs.ExternalPictureURL",
+    "Item.PictureDetails.PictureSource",
+    "Item.PrimaryCategory.CategoryName",
+    "Item.ProductListingDetails.Copyright",
+    "Item.ProductListingDetails.StockPhotoURL",
+    "Item.ProxyItem",
+    "Item.QuantityAvailableHint",
+    "Item.QuantityThreshold",
+    "Item.RelistParentID",
+    "Item.ReviseStatus",
+    "Item.ReviseStatus.BuyItNowAdded",
+    "Item.ReviseStatus.BuyItNowLowered",
+    "Item.ReviseStatus.ItemRevised",
+    "Item.ReviseStatus.ReserveLowered",
+    "Item.ReviseStatus.ReserveRemoved",
+    "Item.SecondaryCategory.CategoryName",
+    "Item.Seller.AboutMePage",
+    "Item.Seller.eBayGoodStanding",
+    "Item.Seller.Email",
+    "Item.Seller.FeedbackPrivate",
+    "Item.Seller.FeedbackRatingStar",
+    "Item.Seller.FeedbackScore",
+    "Item.Seller.IDVerified",
+    "Item.Seller.NewUser",
+    "Item.Seller.RegistrationAddress",
+    "Item.Seller.RegistrationAddress.CityName",
+    "Item.Seller.RegistrationAddress.Country",
+    "Item.Seller.RegistrationAddress.CountryName",
+    "Item.Seller.RegistrationAddress.FirstName",
+    "Item.Seller.RegistrationAddress.LastName",
+    "Item.Seller.RegistrationAddress.Name",
+    "Item.Seller.RegistrationAddress.Phone",
+    "Item.Seller.RegistrationAddress.PostalCode",
+    "Item.Seller.RegistrationAddress.Street",
+    "Item.Seller.RegistrationAddress.Street1",
+    "Item.Seller.RegistrationAddress.Street2",
+    "Item.Seller.RegistrationDate",
+    "Item.Seller.SellerInfo",
+    "Item.Seller.SellerInfo.AllowPaymentEdit",
+    "Item.Seller.SellerInfo.CheckoutEnabled",
+    "Item.Seller.SellerInfo.CIPBankAccountStored",
+    "Item.Seller.SellerInfo.GoodStanding",
+    "Item.Seller.SellerInfo.QualifiesForB2BVAT",
+    "Item.Seller.SellerInfo.SafePaymentExempt",
+    "Item.Seller.SellerInfo.SellerBusinessType",
+    "Item.Seller.SellerInfo.SellerLevel",
+    "Item.Seller.SellerInfo.StoreOwner",
+    "Item.Seller.SellerInfo.StoreURL",
+    "Item.Seller.SellerInfo.TopRatedSeller",
+    "Item.Seller.Site",
+    "Item.Seller.Status",
+    "Item.Seller.UserID",
+    "Item.Seller.UserIDChanged",
+    "Item.Seller.UserIDLastChanged",
+    "Item.Seller.VATStatus",
+    "Item.SellerContactDetails.FirstName",
+    "Item.SellerContactDetails.LastName",
+    "Item.SellerContactDetails.PhoneCountryPrefix",
+    "Item.SellerContactDetails.Street1",
+    "Item.SellerVacationNote",
+    "Item.SellingStatus.BidCount",
+    "Item.SellingStatus.BidIncrement",
+    "Item.SellingStatus.ConvertedCurrentPrice",
+    "Item.SellingStatus.HighBidder",
+    "Item.SellingStatus.HighBidder.AboutMePage",
+    "Item.SellingStatus.HighBidder.BuyerInfo",
+    "Item.SellingStatus.HighBidder.BuyerInfo.ShippingAddress",
+    "Item.SellingStatus.HighBidder.BuyerInfo.ShippingAddress.Country",
+    "Item.SellingStatus.HighBidder.BuyerInfo.ShippingAddress.FirstName",
+    "Item.SellingStatus.HighBidder.BuyerInfo.ShippingAddress.LastName",
+    "Item.SellingStatus.HighBidder.BuyerInfo.ShippingAddress.PostalCode",
+    "Item.SellingStatus.HighBidder.eBayGoodStanding",
+    "Item.SellingStatus.HighBidder.Email",
+    "Item.SellingStatus.HighBidder.FeedbackPrivate",
+    "Item.SellingStatus.HighBidder.FeedbackRatingStar",
+    "Item.SellingStatus.HighBidder.FeedbackScore",
+    "Item.SellingStatus.HighBidder.IDVerified",
+    "Item.SellingStatus.HighBidder.NewUser",
+    "Item.SellingStatus.HighBidder.RegistrationAddress",
+    "Item.SellingStatus.HighBidder.RegistrationAddress.CityName",
+    "Item.SellingStatus.HighBidder.RegistrationAddress.Country",
+    "Item.SellingStatus.HighBidder.RegistrationAddress.CountryName",
+    "Item.SellingStatus.HighBidder.RegistrationAddress.FirstName",
+    "Item.SellingStatus.HighBidder.RegistrationAddress.LastName",
+    "Item.SellingStatus.HighBidder.RegistrationAddress.Name",
+    "Item.SellingStatus.HighBidder.RegistrationAddress.Phone",
+    "Item.SellingStatus.HighBidder.RegistrationAddress.PostalCode",
+    "Item.SellingStatus.HighBidder.RegistrationAddress.Street",
+    "Item.SellingStatus.HighBidder.RegistrationAddress.Street1",
+    "Item.SellingStatus.HighBidder.RegistrationAddress.Street2",
+    "Item.SellingStatus.HighBidder.RegistrationDate",
+    "Item.SellingStatus.HighBidder.Site",
+    "Item.SellingStatus.HighBidder.Status",
+    "Item.SellingStatus.HighBidder.UserAnonymized",
+    "Item.SellingStatus.HighBidder.UserID",
+    "Item.SellingStatus.HighBidder.UserIDChanged",
+    "Item.SellingStatus.HighBidder.UserIDLastChanged",
+    "Item.SellingStatus.HighBidder.VATStatus",
+    "Item.SellingStatus.LeadCount",
+    "Item.SellingStatus.ListingStatus",
+    "Item.SellingStatus.MinimumToBid",
+    "Item.SellingStatus.PromotionalSaleDetails",
+    "Item.SellingStatus.PromotionalSaleDetails.EndTime",
+    "Item.SellingStatus.PromotionalSaleDetails.OriginalPrice",
+    "Item.SellingStatus.PromotionalSaleDetails.StartTime",
+    "Item.SellingStatus.QuantitySold",
+    "Item.SellingStatus.QuantitySoldByPickupInStore",
+    "Item.SellingStatus.ReserveMet",
+    "Item.SellingStatus.SecondChanceEligible",
+    "Item.ShippingDetails.CalculatedShippingDiscount",
+    "Item.ShippingDetails.CalculatedShippingDiscount.DiscountName",
+    "Item.ShippingDetails.CalculatedShippingDiscount.DiscountProfile",
+    "Item.ShippingDetails.CalculatedShippingDiscount.DiscountProfile.DiscountProfileID",
+    "Item.ShippingDetails.CalculatedShippingDiscount.DiscountProfile.DiscountProfileName",
+    "Item.ShippingDetails.CalculatedShippingDiscount.DiscountProfile.MappedDiscountProfileID",
+    "Item.ShippingDetails.CalculatedShippingDiscount.DiscountProfile.WeightOff",
+    "Item.ShippingDetails.FlatShippingDiscount",
+    "Item.ShippingDetails.FlatShippingDiscount.DiscountName",
+    "Item.ShippingDetails.FlatShippingDiscount.DiscountProfile",
+    "Item.ShippingDetails.FlatShippingDiscount.DiscountProfile.DiscountProfileID",
+    "Item.ShippingDetails.FlatShippingDiscount.DiscountProfile.DiscountProfileName",
+    "Item.ShippingDetails.FlatShippingDiscount.DiscountProfile.EachAdditionalAmount",
+    "Item.ShippingDetails.FlatShippingDiscount.DiscountProfile.EachAdditionalAmountOff",
+    "Item.ShippingDetails.FlatShippingDiscount.DiscountProfile.EachAdditionalPercentOff",
+    "Item.ShippingDetails.InternationalCalculatedShippingDiscount",
+    "Item.ShippingDetails.InternationalCalculatedShippingDiscount.DiscountName",
+    "Item.ShippingDetails.InternationalCalculatedShippingDiscount.DiscountProfile",
+    "Item.ShippingDetails.InternationalCalculatedShippingDiscount.DiscountProfile.DiscountProfileID",
+    "Item.ShippingDetails.InternationalCalculatedShippingDiscount.DiscountProfile.DiscountProfileName",
+    "Item.ShippingDetails.InternationalCalculatedShippingDiscount.DiscountProfile.MappedDiscountProfileID",
+    "Item.ShippingDetails.InternationalCalculatedShippingDiscount.DiscountProfile.WeightOff",
+    "Item.ShippingDetails.InternationalFlatShippingDiscount",
+    "Item.ShippingDetails.InternationalFlatShippingDiscount.DiscountName",
+    "Item.ShippingDetails.InternationalFlatShippingDiscount.DiscountProfile",
+    "Item.ShippingDetails.InternationalFlatShippingDiscount.DiscountProfile.DiscountProfileID",
+    "Item.ShippingDetails.InternationalFlatShippingDiscount.DiscountProfile.DiscountProfileName",
+    "Item.ShippingDetails.InternationalFlatShippingDiscount.DiscountProfile.EachAdditionalAmount",
+    "Item.ShippingDetails.InternationalFlatShippingDiscount.DiscountProfile.EachAdditionalAmountOff",
+    "Item.ShippingDetails.InternationalFlatShippingDiscount.DiscountProfile.EachAdditionalPercentOff",
+    "Item.ShippingDetails.PromotionalShippingDiscountDetails",
+    "Item.ShippingDetails.PromotionalShippingDiscountDetails.DiscountName",
+    "Item.ShippingDetails.PromotionalShippingDiscountDetails.ItemCount",
+    "Item.ShippingDetails.PromotionalShippingDiscountDetails.OrderAmount",
+    "Item.ShippingDetails.PromotionalShippingDiscountDetails.ShippingCost",
+    "Item.ShippingDetails.SellerExcludeShipToLocationsPreference",
+    "Item.ShippingDetails.ShippingServiceOptions.ExpeditedService",
+    "Item.ShippingPackageDetails.ShippingPackage",
+    "Item.ShippingDetails.ShippingServiceOptions.ShippingTimeMax",
+    "Item.ShippingDetails.ShippingServiceOptions.ShippingTimeMin",
+    "Item.ShippingDetails.TaxTable",
+    "Item.ShippingDetails.TaxTable.TaxJurisdiction",
+    "Item.ShippingDetails.TaxTable.TaxJurisdiction.JurisdictionID",
+    "Item.ShippingDetails.TaxTable.TaxJurisdiction.SalesTaxPercent",
+    "Item.ShippingDetails.TaxTable.TaxJurisdiction.ShippingIncludedInTax",
+    "Item.Storefront.StoreURL",
+    "Item.TimeLeft",
+    "Item.Variations.Pictures",
+    "Item.Variations.Pictures.VariationSpecificName",
+    "Item.Variations.Pictures.VariationSpecificPictureSet",
+    "Item.Variations.Pictures.VariationSpecificPictureSet.ExtendedPictureDetails.PictureURLs.eBayPictureURL",
+    "Item.Variations.Pictures.VariationSpecificPictureSet.ExtendedPictureDetails.PictureURLs.ExternalPictureURL",
+    "Item.Variations.Pictures.VariationSpecificPictureSet.PictureURL",
+    "Item.Variations.Pictures.VariationSpecificPictureSet.VariationSpecificValue",
+    "Item.Variations.Variation.DiscountPriceInfo",
+    "Item.Variations.Variation.DiscountPriceInfo.MadeForOutletComparisonPrice",
+    "Item.Variations.Variation.DiscountPriceInfo.MinimumAdvertisedPrice",
+    "Item.Variations.Variation.DiscountPriceInfo.MinimumAdvertisedPriceExposure",
+    "Item.Variations.Variation.DiscountPriceInfo.OriginalRetailPrice",
+    "Item.Variations.Variation.DiscountPriceInfo.PricingTreatment",
+    "Item.Variations.Variation.DiscountPriceInfo.SoldOffeBay",
+    "Item.Variations.Variation.DiscountPriceInfo.SoldOneBay",
+    "Item.Variations.Variation.SellingStatus.HighBidder.AboutMePage",
+    "Item.Variations.Variation.SellingStatus.HighBidder.BuyerInfo",
+    "Item.Variations.Variation.SellingStatus.HighBidder.BuyerInfo.ShippingAddress",
+    "Item.Variations.Variation.SellingStatus.HighBidder.BuyerInfo.ShippingAddress.Country",
+    "Item.Variations.Variation.SellingStatus.HighBidder.BuyerInfo.ShippingAddress.FirstName",
+    "Item.Variations.Variation.SellingStatus.HighBidder.BuyerInfo.ShippingAddress.LastName",
+    "Item.Variations.Variation.SellingStatus.HighBidder.BuyerInfo.ShippingAddress.PostalCode",
+    "Item.Variations.Variation.SellingStatus.HighBidder.eBayGoodStanding",
+    "Item.Variations.Variation.SellingStatus.HighBidder.Email",
+    "Item.Variations.Variation.SellingStatus.HighBidder.FeedbackPrivate",
+    "Item.Variations.Variation.SellingStatus.HighBidder.FeedbackRatingStar",
+    "Item.Variations.Variation.SellingStatus.HighBidder.FeedbackScore",
+    "Item.Variations.Variation.SellingStatus.HighBidder.IDVerified",
+    "Item.Variations.Variation.SellingStatus.HighBidder.NewUser",
+    "Item.Variations.Variation.SellingStatus.HighBidder.RegistrationAddress",
+    "Item.Variations.Variation.SellingStatus.HighBidder.RegistrationAddress.CityName",
+    "Item.Variations.Variation.SellingStatus.HighBidder.RegistrationAddress.Country",
+    "Item.Variations.Variation.SellingStatus.HighBidder.RegistrationAddress.CountryName",
+    "Item.Variations.Variation.SellingStatus.HighBidder.RegistrationAddress.FirstName",
+    "Item.Variations.Variation.SellingStatus.HighBidder.RegistrationAddress.LastName",
+    "Item.Variations.Variation.SellingStatus.HighBidder.RegistrationAddress.Name",
+    "Item.Variations.Variation.SellingStatus.HighBidder.RegistrationAddress.Phone",
+    "Item.Variations.Variation.SellingStatus.HighBidder.RegistrationAddress.PostalCode",
+    "Item.Variations.Variation.SellingStatus.HighBidder.RegistrationAddress.Street",
+    "Item.Variations.Variation.SellingStatus.HighBidder.RegistrationAddress.Street1",
+    "Item.Variations.Variation.SellingStatus.HighBidder.RegistrationAddress.Street2",
+    "Item.Variations.Variation.SellingStatus.HighBidder.RegistrationDate",
+    "Item.Variations.Variation.SellingStatus.HighBidder.Site",
+    "Item.Variations.Variation.SellingStatus.HighBidder.Status",
+    "Item.Variations.Variation.SellingStatus.HighBidder.UserAnonymized",
+    "Item.Variations.Variation.SellingStatus.HighBidder.UserID",
+    "Item.Variations.Variation.SellingStatus.HighBidder.UserIDChanged",
+    "Item.Variations.Variation.SellingStatus.HighBidder.UserIDLastChanged",
+    "Item.Variations.Variation.SellingStatus.HighBidder.VATStatus",
+    "Item.Variations.Variation.SellingStatus.PromotionalSaleDetails.EndTime",
+    "Item.Variations.Variation.SellingStatus.PromotionalSaleDetails.OriginalPrice",
+    "Item.Variations.Variation.SellingStatus.PromotionalSaleDetails.StartTime",
+    "Item.Variations.Variation.SellingStatus.QuantitySold",
+    "Item.Variations.Variation.SellingStatus.QuantitySoldByPickupInStore",
+    "Item.Variations.Variation.StartPrice",
+    "Item.Variations.Variation.VariationProductListingDetails",
+    "Item.Variations.Variation.VariationProductListingDetails.EAN",
+    "Item.Variations.Variation.VariationProductListingDetails.ISBN",
+    "Item.Variations.Variation.VariationProductListingDetails.UPC",
+    "Item.Variations.Variation.VariationSpecifics",
+    "Item.Variations.Variation.VariationSpecifics.NameValueList",
+    "Item.Variations.Variation.VariationSpecifics.NameValueList.Name",
+    "Item.Variations.Variation.VariationSpecifics.NameValueList.Value",
+    "Item.Variations.VariationSpecificsSet",
+    "Item.Variations.VariationSpecificsSet.NameValueList",
+    "Item.Variations.VariationSpecificsSet.NameValueList.Name",
+    "Item.Variations.VariationSpecificsSet.NameValueList.Source",
+    "Item.Variations.VariationSpecificsSet.NameValueList.Value",
+    "Item.VATDetails.VATID",
+    "Item.VATDetails.VATSite",
+    "Item.WatchCount"
+
+]
+
+

@@ -5,6 +5,7 @@ var express = require('express');
 var router = express.Router();
 var passport = require('passport');
 var LocalStrategy = require('passport-local').Strategy;
+var Cookies = require( "cookies" )
 
 var User = require('../models/user');
 
@@ -33,6 +34,7 @@ router.post('/register', function(req, res){
     req.checkBody('email', 'Email is not valid').isEmail();
     req.checkBody('username', 'Username is required').notEmpty();
     req.checkBody('password', 'Password is required').notEmpty();
+    req.checkBody('token', 'Ebay token is required').notEmpty();
     req.checkBody('password2', 'Passwords do not match').equals(req.body.password);
 
     var errors = req.validationErrors();
@@ -42,24 +44,59 @@ router.post('/register', function(req, res){
             errors:errors
         });
     } else {
-        var newUser = new User({
-            name: name,
-            email:email,
-            username: username,
-            ebayToken: ebayToken,
-            password: password
-        });
+        //  var newUser = new User({
+        //      name: name,
+        //      email:email,
+        // ///     username: username,
+        // //     ebayToken: ebayToken,
+        // //     password: password
+        // // });
 
-        User.createUser(newUser, function(err, user){
-            if(err) throw err;
-            console.log(user);
-        });
+        // User.createUser(newUser, function(err, user){
+        //     if(err) throw err;
+        //     console.log(user);
+        // });
 
-        req.flash('success_msg', 'You are registered and can now login');
-
-        res.redirect('/users/login');
+        //req.flash('success_msg', 'need to add plan now ');
+        req.session.name = name;
+        req.session.username = username;
+        req.session.email = email;
+        req.session.ebayToken = ebayToken;
+        req.session.password = password;
+        //req.session = {'name':name,'email':email,'username':username,'ebayToken':ebayToken,'password':password};
+        res.render('plan');
     }
 });
+
+
+
+// router.post('/plan', function(req, res){
+//     var name = req.body.name;
+//     var email = req.body.email;
+//     var username = req.body.username;
+//     var password = req.body.password;
+//     var ebayToken = req.body.token;
+//     var password2 = req.body.password2;
+//
+//
+//         var newUser = new User({
+//             name: name,
+//             email:email,
+//             username: username,
+//             ebayToken: ebayToken,
+//             password: password
+//         });
+//
+//         User.createUser(newUser, function(err, user){
+//             if(err) throw err;
+//             console.log(user);
+//         });
+//
+//         req.flash('success_msg', 'You are registered and can now login');
+//
+//         res.redirect('/users/login');
+//
+// });
 
 
 passport.use(new LocalStrategy(
