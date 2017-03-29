@@ -171,8 +171,6 @@ router.post('/addItem', function(req, res){
                 res.send(JSON.stringify(results));
             }
         });
-
-
     });
 
 
@@ -509,7 +507,6 @@ console.log('insert value : '+req.query.value);
                         errors: err
                     });
                 }
-                //req.flash('success_msg', 'item id has been added');
                 res.json(JSON.stringify({status:"updated"}));
             });
         }
