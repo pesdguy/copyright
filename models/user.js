@@ -26,6 +26,15 @@ var UserSchema = mongoose.Schema({
     },
     transactionId: {
         type: String
+    },
+    latestItems:{
+        type : Array , "default" : []
+    },
+    RevokedItems:{
+        type : Array , "default" : []
+    },
+    excludedItems:{
+        type: Array , "default":[]
     }
 });
 
@@ -49,6 +58,12 @@ module.exports.getUserByUsername = function(username, callback){
     User.findOne(query, callback);
 }
 
+module.exports.getUserByEmail = function(email, callback){
+    var query = {email: email};
+    User.findOne(query, callback);
+}
+
+
 module.exports.getUserById = function(id, callback){
     User.findById(id, callback);
 }
@@ -59,3 +74,5 @@ module.exports.comparePassword = function(candidatePassword, hash, callback){
         callback(null, isMatch);
     });
 }
+
+module.exports.User = User;

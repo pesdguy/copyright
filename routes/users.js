@@ -34,7 +34,6 @@ router.post('/register', function(req, res){
     req.checkBody('email', 'Email is not valid').isEmail();
     req.checkBody('username', 'Username is required').notEmpty();
     req.checkBody('password', 'Password is required').notEmpty();
-    req.checkBody('token', 'Ebay token is required').notEmpty();
     req.checkBody('password2', 'Passwords do not match').equals(req.body.password);
 
     var errors = req.validationErrors();
@@ -44,20 +43,6 @@ router.post('/register', function(req, res){
             errors:errors
         });
     } else {
-        //  var newUser = new User({
-        //      name: name,
-        //      email:email,
-        // ///     username: username,
-        // //     ebayToken: ebayToken,
-        // //     password: password
-        // // });
-
-        // User.createUser(newUser, function(err, user){
-        //     if(err) throw err;
-        //     console.log(user);
-        // });
-
-        //req.flash('success_msg', 'need to add plan now ');
         req.session.name = name;
         req.session.username = username;
         req.session.email = email;

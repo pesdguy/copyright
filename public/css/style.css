@@ -82,6 +82,10 @@ body {
   margin-top:0;
 }
 
+.img-thumbnail:hover {
+  border: solid 1px blue;
+}
+
 footer{
   margin-top:40px;
 }

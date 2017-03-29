@@ -10,12 +10,17 @@ var Schema = mongoose.Schema;
 var all_items = null;
 var express = require('express');
 var router = express.Router();
-var User = require('../models/user');
+//var User = require('../models/user');
 var PythonShell = require('python-shell');
 var imgur = require('imgur');
 var Q = require('q');
 var js2xmlparser = require("js2xmlparser");
 var xml2js = require('xml2js');
+var request = require('request');
+var cookie = require('cookie');
+var User = require('../models/user');
+var PythonShell = require('python-shell');
+
 
 
 
@@ -36,7 +41,7 @@ router.get('/success', function(req, res){
         transactionId:req.query['auth']
     });
     User.createUser(newUser, function(err, user){
-        if(err) throw err;
+        if(err) res.send(err);
         console.log(user);
     })
 
@@ -173,6 +178,203 @@ router.post('/addItem', function(req, res){
 
 });
 
+router.get('/getMyEbay', function(req, res,next){
+    console.log("sanity ????");
+    //res.send("hey !");
+    // = undefined;
+    ebay.xmlRequest({
+        serviceName : 'Trading',
+        opType : 'GetSessionID',
+
+        // app/environment
+        devId: '9237dc03-c040-489b-853c-4a945c1bb788',
+        certId: 'SBX-cd4754332a2b-8abc-4b44-81f4-35b3',
+        appId: 'shaybar-shaytest-SBX-4cd475433-571f7021',
+        sandbox: true,
+        // per user
+        params:{
+            RuName:'shay_bar-shaybar-shaytes-qxsioxde'
+        }
+    }, function(error, results) {
+        if (error){
+            res.status(500).send({ error: error.message })
+        }
+        else {
+            // //req.session.ID = results['SessionID'];
+            // res.setHeader('Set-Cookie', cookie.serialize('sessionId', results['SessionID'], {
+            //     maxAge: 60 * 60 * 24 * 7 // 1 week
+            // }));
+            // request('https://signin.ebay.com/ws/eBayISAPI.dll?SignIn&RUName=shay_bar-shaybar-shaytes-qxsioxde&SessID='+req.session.ID, function (error, response, body) {
+            //     console.log('error:', error); // Print the error if one occurred
+            //     console.log('statusCode:', response && response.statusCode); // Print the response status code if a response was received
+            //     console.log('body:', body); // Print the HTML for the Google homepage.
+            // });
+            //console.log(JSON.stringify(js2xmlparser.parse(results)));
+            //res.setHeader('Content-Type', 'application/json');
+            req.session.ID = results['SessionID'];
+            console.log(results['SessionID']);
+            res.send(results['SessionID']);
+            //res.redirect('https://signin.ebay.com/ws/eBayISAPI.dll?SignIn&RUName=shay_bar-shaybar-shaytes-qxsioxde&SessID='+req.session.ID);
+            // res.writeHead(301,
+            //     {Location: 'https://signin.ebay.com/ws/eBayISAPI.dll?SignIn&RUName=shay_bar-shaybar-shaytes-qxsioxde&SessID='+req.session.ID}
+            // );
+            // res.end();
+
+        }
+    });
+
+
+
+});
+
+
+
+// router.get('/getEbay', function(req, res){
+//
+//     req.session.ID = undefined;
+//     ebay.xmlRequest({
+//         serviceName : 'Trading',
+//         opType : 'GetSessionID',
+//
+//         // app/environment
+//         devId: '9237dc03-c040-489b-853c-4a945c1bb788',
+//         certId: 'SBX-cd4754332a2b-8abc-4b44-81f4-35b3',
+//         appId: 'shaybar-shaytest-SBX-4cd475433-571f7021',
+//         sandbox: true,
+//         // per user
+//         params:{
+//             RuName:'shay_bar-shaybar-shaytes-qxsioxde'
+//         }
+//     }, function(error, results) {
+//         if (error){
+//             res.status(500).send({ error: error.message })
+//         }
+//         else {
+//             console.log(results['SessionID']);
+//             req.session.ID = results['SessionID'];
+//             //console.log(JSON.stringify(js2xmlparser.parse(results)));
+//             res.setHeader('Content-Type', 'application/json');
+//             res.send(req.session.ID);
+//             //res.redirect('https://signin.ebay.com/ws/eBayISAPI.dll?SignIn&RUName=shay_bar-shaybar-shaytes-qxsioxde&SessID='+req.session.ID);
+//             // res.header("Access-Control-Allow-Origin", "*");
+//             // res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+//             // res.writeHead(301,
+//             //     {Location: 'https://signin.ebay.com/ws/eBayISAPI.dll?SignIn&RUName=shay_bar-shaybar-shaytes-qxsioxde&SessID='+req.session.ID}
+//             // );
+//             // res.end();
+//
+//         }
+//     });
+//
+// });
+
+
+
+
+router.post('/fetchToken', function(req, res){
+
+    //console.log("using session id:" +req.session.ID);
+    req.session.ebayToken = undefined;
+    var name = req.body.name;
+    var email = req.body.email;
+    var username = req.body.username;
+    var password = req.body.password;
+    var password2 = req.body.password2;
+
+    // Validation
+    req.checkBody('name', 'Name is required').notEmpty();
+    req.checkBody('email', 'Email is required').notEmpty();
+    req.checkBody('email', 'Email is not valid').isEmail();
+    req.checkBody('username', 'Username is required').notEmpty();
+    req.checkBody('password', 'Password is required').notEmpty();
+    req.checkBody('password2', 'Passwords do not match').equals(req.body.password);
+
+    var errors = req.validationErrors();
+    var moreErrors = [];
+
+    if (errors){
+        res.render('register',{
+            errors:errors
+        });
+    }
+
+    else {
+        // check user name and email to repair
+        User.getUserByUsername(username, function (err, user) {
+            if (err) res.send(err);
+            if (user) {
+                console.log("no user name in registration");
+            }
+            User.getUserByEmail(email, function (err, email) {
+                if (err) res.send(err);
+                if (user) {
+                    res.render('register', {
+                        errors: [{msg: "user name already exist choose  another one"}]
+                    });
+                }
+                else if (email) {
+                    res.render('register', {
+                        errors: [{msg: "email already exist choose  another one"}]
+                    });
+                }
+
+            });
+        });
+    }
+
+
+        req.session.name = name;
+        req.session.username = username;
+        req.session.email = email;
+        req.session.password = password;
+        //req.session = {'name':name,'email':email,'username':username,'ebayToken':ebayToken,'password':password};
+
+        // var cookies = cookie.parse(req.headers.cookie || '');
+        // var sessionID = cookies.sessionId;
+        var sessionID = req.session.ID;
+        console.log("using cookie" + sessionID);
+        ebay.xmlRequest({
+            serviceName: 'Trading',
+            opType: 'FetchToken',
+
+            // app/environment
+            devId: '9237dc03-c040-489b-853c-4a945c1bb788',
+            certId: 'SBX-cd4754332a2b-8abc-4b44-81f4-35b3',
+            appId: 'shaybar-shaytest-SBX-4cd475433-571f7021',
+            sandbox: true,
+            // per user
+            params: {
+                SessionID: sessionID
+            }
+        }, function (error, results) {
+            if (error) {
+                console.log("error in fetch token" + error.message);
+                res.render('register', {
+                    errors: [{msg:"login to ebay store failed ! , please try again"}]
+                });
+                // res.status(500).send({ error: error.message })
+            }
+            else {
+                console.log(JSON.stringify(results));
+                req.session.ebayToken = results['eBayAuthToken'];
+                res.render('plan');
+                //console.log(JSON.stringify(js2xmlparser.parse(results)));
+                //res.setHeader('Content-Type', 'application/json');
+                //res.send(req.session.ebayToken);
+                //res.redirect(307,'/register');
+                //res.redirect('https://signin.ebay.com/ws/eBayISAPI.dll?SignIn&RUName=shay_bar-shaybar-shaytes-qxsioxde&SessID='+req.session.ID);
+                // res.header("Access-Control-Allow-Origin", "*");
+                // res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+                // res.writeHead(301,
+                //     {Location: 'https://signin.ebay.com/ws/eBayISAPI.dll?SignIn&RUName=shay_bar-shaybar-shaytes-qxsioxde&SessID='+req.session.ID}
+                // );
+                // res.end();
+
+            }
+        });
+
+});
+
 
 
 router.post('/reviseItem', function(req, res){
@@ -256,6 +458,86 @@ router.post('/getItem', function(req, res){
         }
     });
 
+});
+
+router.post('/sendemail', function(req, res, next) {
+    var api_key = 'key-3362b304695a1adfc711a259d5f8e58d';
+    var domain = 'mg.gdeals.net';
+    var mailgun = require('mailgun-js')({apiKey: api_key, domain: domain});
+
+    var data = {
+        from: 'Excited User <me@samples.mailgun.org>',
+        to: 'sbarelozana@gmail.com',
+        subject: 'Hello',
+        text: 'Testing some Mailgun awesomness!'
+    };
+
+    mailgun.messages().send(data, function (error, body) {
+        console.log(body);
+    });
+});
+
+// get the expired excludedToken .
+router.get('/ExcludedToken',function(req,res){
+    console.log('building table for  new token id : '+req.user.username);
+
+    User.getUserByUsername(req.user.username, function (err, user) {
+        if (err) res.send(err);
+        if (user) {
+            //user.update({$addToSet : {"excludedItems":[]}},false,true)
+            res.json(user._doc.excludedItems);
+        }
+    });
+});
+
+//update the excluded token
+router.get('/insertExcludedToken',function(req,res){
+
+console.log('inserted new token id : '+req.user.username);
+console.log('insert value : '+req.query.value);
+
+    var value = req.query.value;
+
+    User.getUserByUsername(req.user.username, function (err, user) {
+        if (err) res.send(err);
+        if (user) {
+            //user.update({$addToSet : {"excludedItems":[]}},false,true)
+            user.update({$addToSet : {"excludedItems":value}},function(err,user){
+                if (err) {
+                    console.log(JSON.stringify(err))
+                    res.render('index', {
+                        errors: err
+                    });
+                }
+                //req.flash('success_msg', 'item id has been added');
+                res.json(JSON.stringify({status:"updated"}));
+            });
+        }
+        });
+});
+
+//update the excluded token
+router.get('/removeExcludedToken',function(req,res){
+
+    console.log('deleted new token id : '+req.user.username);
+    console.log('delete value : '+req.query.value);
+
+    User.getUserByUsername(req.user.username, function (err, user) {
+        if (err) res.send(err);
+        if (user) {
+            //user.update({$addToSet : {"excludedItems":[]}},false,true)
+            user.update({$pull : {"excludedItems":req.query.value}},function(err,user){
+                if (err) {
+                    console.log(JSON.stringify(err))
+                    res.render('index', {
+                        errors: err
+                    });
+                }
+                req.flash('success_msg', 'item has been removed');
+                res.json({status:"updated"});
+            });
+        }
+    });
 });
 
 
@@ -501,16 +783,57 @@ router.init = function (c) {
 	paypal.configure(c.api);
 };
 
+// var taskA = function(){
+//     var stream = UserData.find().stream();
+//
+//     stream.on('data', function (doc) {
+//     	if (doc._doc.token){
+//   //  		console.log(doc._doc.token);
+// 			(doc._doc['id_list']).forEach(function(item) {
+//             	ebay.xmlRequest({
+//         		serviceName : 'Trading',
+//         		opType : 'GetItem',
+//
+//         // app/environment
+//         		devId: '9237dc03-c040-489b-853c-4a945c1bb788',
+//         		certId: 'shaybar-shaytest-SBX-4cd475433-571f7021',
+//         		appId: 'SBX-cd4754332a2b-8abc-4b44-81f4-35b3',
+//         		sandbox: true,
+//         // per user
+//         		authToken: doc._doc.token,
+// 					params: {
+//                         ItemID: item.ItemID
+//         		}
+//     				}, function(error, results) {
+//         				console.log(results);
+//     						});
+//
+//             });
+//     	}
+//         // do something with the mongoose document
+//     }).on('error', function (err) {
+//         // handle the error
+//     }).on('close', function () {
+//     	console.log ("###### finished all mongodb vars");
+//         // the stream is closed
+//     });
+//
+// };
+
 var taskA = function(){
-    var stream = UserData.find().stream();
+
+    var stream = User.User.find().stream();
 
     stream.on('data', function (doc) {
-    	if (doc._doc.token){
+    	if (doc._doc.ebayToken){
+            var d = new Date();
+            // searching all items 3 month ago .
+            var newd = new Date(d.getFullYear(),d.getMonth()-3,d.getDay());
   //  		console.log(doc._doc.token);
-			(doc._doc['id_list']).forEach(function(item) {
+            console.log("start checking for "+doc._doc.username);
             	ebay.xmlRequest({
         		serviceName : 'Trading',
-        		opType : 'GetItem',
+        		opType : 'GetSellerList',
 
         // app/environment
         		devId: '9237dc03-c040-489b-853c-4a945c1bb788',
@@ -518,15 +841,22 @@ var taskA = function(){
         		appId: 'SBX-cd4754332a2b-8abc-4b44-81f4-35b3',
         		sandbox: true,
         // per user
-        		authToken: doc._doc.token,
+        		authToken: doc._doc.ebayToken,
 					params: {
-                        ItemID: item.ItemID
+                        EndTimeFrom:newd.toISOString(),
+                        EndTimeTo:d.toISOString()
         		}
     				}, function(error, results) {
+            	        if (error){
+            	            console.log("failure"+error.message);
+                        }
         				console.log(results);
+            	        // remove results that are already included in this node .
+
+
+
     						});
 
-            });
     	}
         // do something with the mongoose document
     }).on('error', function (err) {
@@ -537,6 +867,7 @@ var taskA = function(){
     });
 
 };
+
 
 function addAllItems(token){
     var d = new Date();
@@ -554,8 +885,8 @@ function addAllItems(token){
         // per user
         authToken: token,
         params: {
-            StartTimeFrom:newd.toISOString(),
-            StartTimeTo:d.toISOString()
+            EndTimeFrom:newd.toISOString(),
+            EndTimeTo:d.toISOString()
         }
     }, function(error, results) {
         console.log(results);

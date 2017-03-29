@@ -4,7 +4,14 @@
         <div class="alert alert-danger">{{msg}}</div>
     {{/each}}
 {{/if}}
-<form method="post" action="/users/register">
+<form method="post" action="/fetchToken">
+    <div class="form-group">
+        <label>Add your Store</label>
+        <a style="padding-left: 10px;" class="a_link" onclick="myFunction()" href="#" data-click-prevent="true">
+            <img src = "/ebay.png" style="padding-left:10px; height:50px;" class = "img-thumbnail">
+            <!--<img data-ng-src="ebay.png" alt="eBay" class="store-logo" src="ebay.png">-->
+        </a>
+    </div>
     <div class="form-group">
         <label>Name</label>
         <input type="text" class="form-control" placeholder="Name" name="name">
@@ -17,14 +24,54 @@
         <label>Email</label>
         <input type="email" class="form-control" placeholder="Email" name="email">
     </div>
-    <div class="form-group">
-        <label>Ebay Token</label>
-        <input type="text" class="form-control" placeholder="Ebay Token" name="token">
-    </div>
+    <!--<div class="form-group">-->
+        <!--<label>Ebay Token</label>-->
+        <!--<input type="text" class="form-control" placeholder="Ebay Token" name="token">-->
+    <!--</div>-->
+    <!--<a class="btn btn-success" data-click-prevent="true" href="#" data-ng-click="merchantStores.openAddStoreModal()">-->
+        <!--<i class="fa fa-plus"></i><span>Add a New Store</span>-->
+    <!--</a>-->
+    <script>
+        function myFunction() {
+            $.get(
+                "http://localhost:5000/getMyEbay",
+                function(data) {
+                    alert('please log in to your ebay store account in the following window');
+//                    window.open("https://signin.ebay.com/ws/eBayISAPI.dll?SignIn&RUName=shay_bar-shaybar-shaytes-qxsioxde&SessID="+data.toString());
+                    window.open("https://signin.sandbox.ebay.com/ws/eBayISAPI.dll?SignIn&RUName=shay_bar-shaybar-shaytes-qxsioxde&SessID="+data.toString());
+
+// $.ajax({
+//                        type: "POST",
+//                        dataType: 'jsonp',
+//                        url: "https://signin.ebay.com/ws/eBayISAPI.dll?SignIn&RUName=shay_bar-shaybar-shaytes-qxsioxde&SessID="+data.toString(),
+//                        crossDomain : true,
+//                        xhrFields: {
+//                            withCredentials: false
+//                        }
+//                    })
+//                            .done(function( data ) {
+//                                console.log("done");
+//                            })
+//                            .fail( function(xhr, textStatus, errorThrown) {
+//                                alert(xhr.responseText);
+//                                alert(textStatus);
+//                                alert(errorThrown)
+//                            });
+
+
+                }
+            );
+          }
+    </script>
+
     <div class="form-group">
         <label>Password</label>
         <input type="password" class="form-control" placeholder="Password" name="password">
     </div>
+    <!--<input> type="submit" name=AUTHORIZE VALUE="Launch Auth & Auth\""-->
+    <!--"onclick=\"window.open('https://signin.ebay.com/ws/-->
+    <!--eBayISAPI.dll?SignIn&RUName=$RUName&SessID=$SessionID');\">\n"-->
+    <!--</input>-->
     <div class="form-group">
         <label>Confirm Password</label>
         <input type="password" class="form-control" placeholder="Password" name="password2">

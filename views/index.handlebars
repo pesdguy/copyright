@@ -1,2 +1,145 @@
-<h2 class="page-header">Dashboard</h2>
-<p>Welcome to your dashboard</p>
+<!--<h2 class="page-header">Dashboard</h2>-->
+<!--<p>Welcome to your dashboard</p>-->
+
+
+<div class="container">
+    <h3>Items Excluded : </h3>
+    <!--<p>The .table-hover class enables a hover state on table rows:</p>-->
+    <table id="ItemExcluded" class="table table-hover">
+        <thead>
+        <tr>
+            <th>ItemId</th>
+        </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+</div>
+
+<!--<div class="container">-->
+    <!--<h2>Items Revoked : </h2>-->
+    <!--&lt;!&ndash;<p>The .table-hover class enables a hover state on table rows:</p>&ndash;&gt;-->
+    <!--<table id="ItemRevoked" class="table table-hover">-->
+        <!--<thead>-->
+        <!--<tr>-->
+            <!--<th>Revoked ItemId</th>-->
+            <!--<th>new ItemId</th>-->
+
+        <!--</tr>-->
+        <!--</thead>-->
+        <!--<tbody>-->
+        <!--<tr>-->
+            <!--<td>John</td>-->
+        <!--</tr>-->
+        <!--</tbody>-->
+    <!--</table>-->
+<!--</div>-->
+
+<form class = "bs-example bs-example-form" role = "form">
+    <div class = "row">
+        <div class = "col-lg-8">
+            <div class = "input-group">
+                <input type = "text" id="inputText" class = "form-control">
+
+                <span class = "input-group-btn">
+                  <button id="addItem" class = "btn btn-success" type = "button">
+                     Add Item
+                  </button>
+                    <button id="RemoveItem" class = "btn btn-danger" type = "button">
+                     Remove Item
+                  </button>
+
+               </span>
+
+            </div><!-- /input-group -->
+        </div><!-- /.col-lg-6 -->
+    </div><!-- /.row -->
+</form>
+
+    <script>
+    $(document).ready(function(){
+        var table = document.getElementById("ItemExcluded");
+
+        $.get(
+                "http://localhost:5000/ExcludedToken",
+                function(data) {
+                    console.log(data);
+                    alert(data);
+                    for (var i = 0; i < data.length; i++) {
+                        alert(data[i]);
+                        var row = table.insertRow(i+1);
+                        var cell = row.insertCell(0);
+                        cell.innerHTML = data[i]
+                    }
+//                        alert('please log in to your ebay store account in the following window');
+////                    window.open("https://signin.ebay.com/ws/eBayISAPI.dll?SignIn&RUName=shay_bar-shaybar-shaytes-qxsioxde&SessID="+data.toString());
+//                        window.open("https://signin.sandbox.ebay.com/ws/eBayISAPI.dll?SignIn&RUName=shay_bar-shaybar-shaytes-qxsioxde&SessID="+data.toString());
+                    //var row = table.insertRow(rowCount);
+                    //var cell1 = row.insertCell(0);
+                    //cell1.innerHTML = text;
+
+                }
+        );
+//        var row = table.insertRow(0);
+//        var cell1 = row.insertCell(0);
+//        var cell2 = row.insertCell(1);
+//        cell1.innerHTML = "NEW CELL1";
+//        cell2.innerHTML = "NEW CELL2";
+        $("#addItem").click(function(){
+            var rowCount = $('#ItemExcluded tr').length;
+            var text = $('#inputText').val();
+
+
+            var tableRow = $("td").filter(function() {
+                return $(this).text() == text;
+            }).closest("tr");
+
+            if (tableRow.length > 0 ){
+                alert("Table id already exist");
+                return ;
+            }
+
+            // no issues with adding the items :
+            $.get(
+                    "http://localhost:5000/insertExcludedToken?value="+text,
+                    function(data) {
+                        //console.log(data.status);
+
+//                        alert('please log in to your ebay store account in the following window');
+////                    window.open("https://signin.ebay.com/ws/eBayISAPI.dll?SignIn&RUName=shay_bar-shaybar-shaytes-qxsioxde&SessID="+data.toString());
+//                        window.open("https://signin.sandbox.ebay.com/ws/eBayISAPI.dll?SignIn&RUName=shay_bar-shaybar-shaytes-qxsioxde&SessID="+data.toString());
+                        var row = table.insertRow(rowCount);
+                        var cell1 = row.insertCell(0);
+                        cell1.innerHTML = text;
+
+                    }
+            );
+        });
+
+        $("#RemoveItem").click(function(){
+            var texts = $('#inputText').val();
+            var tableRow = $("td").filter(function() {
+                return $(this).text() == texts;
+            }).closest("tr");
+
+            if (tableRow.length > 0 ){
+                $.get(
+                        "http://localhost:5000/removeExcludedToken?value="+texts,
+                        function(data) {
+//                        alert('please log in to your ebay store account in the following window');
+////                    window.open("https://signin.ebay.com/ws/eBayISAPI.dll?SignIn&RUName=shay_bar-shaybar-shaytes-qxsioxde&SessID="+data.toString());
+//                        window.open("https://signin.sandbox.ebay.com/ws/eBayISAPI.dll?SignIn&RUName=shay_bar-shaybar-shaytes-qxsioxde&SessID="+data.toString());
+                            tableRow.remove()
+                        }
+                );
+
+            }
+            else {
+                alert("Table id is not exist");
+            }
+        });
+
+
+
+        });
+</script>
