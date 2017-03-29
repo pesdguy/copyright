@@ -42,7 +42,7 @@ app.use(bodyParser.urlencoded({
     extended: false
 }));
 app.use(bodyParser.json());
-app.use(methodOverride('X-HTTP-Method-Override'));
+//app.use(methodOverride('X-HTTP-Method-Override'));
 app.use(cookieParser());
 app.use(session({
     secret: 'keyboard cat',
