@@ -43,7 +43,7 @@ router.get('/success', function(req, res){
     User.createUser(newUser, function(err, user){
         if(err) res.send(err);
         console.log(user);
-    })
+    });
 
 
     req.flash('success_msg', 'You have been registered ');
