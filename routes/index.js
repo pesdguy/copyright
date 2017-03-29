@@ -461,7 +461,7 @@ router.post('/getItem', function(req, res){
 router.post('/sendemail', function(req, res, next) {
     var api_key = 'key-3362b304695a1adfc711a259d5f8e58d';
     var domain = 'mg.gdeals.net';
-    var mailgun = require('mailgun-js')({apiKey: api_key, domain: domain});
+    var mailgun = require('mailgun-js')({apiKey: api_key, domain: domain});;
 
     var data = {
         from: 'Excited User <me@samples.mailgun.org>',
@@ -502,7 +502,7 @@ console.log('insert value : '+req.query.value);
             //user.update({$addToSet : {"excludedItems":[]}},false,true)
             user.update({$addToSet : {"excludedItems":value}},function(err,user){
                 if (err) {
-                    console.log(JSON.stringify(err))
+                    console.log(JSON.stringify(err));
                     res.render('index', {
                         errors: err
                     });
