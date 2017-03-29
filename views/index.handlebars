@@ -61,7 +61,7 @@
         var table = document.getElementById("ItemExcluded");
 
         $.get(
-                "http://localhost:5000/ExcludedToken",
+                "http://localhost:3000/ExcludedToken",
                 function(data) {
                     console.log(data);
                     alert(data);
@@ -101,7 +101,7 @@
 
             // no issues with adding the items :
             $.get(
-                    "http://localhost:5000/insertExcludedToken?value="+text,
+                    "http://localhost:3000/insertExcludedToken?value="+text,
                     function(data) {
                         //console.log(data.status);
 
@@ -124,7 +124,7 @@
 
             if (tableRow.length > 0 ){
                 $.get(
-                        "http://localhost:5000/removeExcludedToken?value="+texts,
+                        "http://localhost:3000/removeExcludedToken?value="+texts,
                         function(data) {
 //                        alert('please log in to your ebay store account in the following window');
 ////                    window.open("https://signin.ebay.com/ws/eBayISAPI.dll?SignIn&RUName=shay_bar-shaybar-shaytes-qxsioxde&SessID="+data.toString());
