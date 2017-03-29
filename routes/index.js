@@ -326,7 +326,7 @@ router.post('/fetchToken', function(req, res){
 
     }
 
-    else if (!isError && !isErrorEmpty) {
+     if (!isError && !isErrorEmpty) {
 
         req.session.name = name;
         req.session.username = username;
@@ -379,7 +379,6 @@ router.post('/fetchToken', function(req, res){
             }
         });
     }
-
 });
 
 
