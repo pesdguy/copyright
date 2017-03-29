@@ -294,6 +294,7 @@ router.post('/fetchToken', function(req, res){
         res.render('register',{
             errors:errors
         });
+        res.end()
     }
 
     else {
@@ -309,16 +310,17 @@ router.post('/fetchToken', function(req, res){
                     res.render('register', {
                         errors: [{msg: "user name already exist choose  another one"}]
                     });
+                    res.end()
                 }
                 else if (email) {
                     res.render('register', {
                         errors: [{msg: "email already exist choose  another one"}]
                     });
+                    res.end()
                 }
 
             });
         });
-    }
 
 
         req.session.name = name;
@@ -348,8 +350,10 @@ router.post('/fetchToken', function(req, res){
             if (error) {
                 console.log("error in fetch token" + error.message);
                 res.render('register', {
-                    errors: [{msg:"login to ebay store failed ! , please try again"}]
+                    errors: [{msg: "login to ebay store failed ! , please try again"}]
                 });
+                res.end()
+
                 // res.status(500).send({ error: error.message })
             }
             else {
@@ -370,6 +374,7 @@ router.post('/fetchToken', function(req, res){
 
             }
         });
+    }
 
 });
 
