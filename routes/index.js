@@ -290,14 +290,16 @@ router.post('/fetchToken', function(req, res){
     var errors = req.validationErrors();
     var moreErrors = [];
 
+    var isErrorEmpty = false;
     if (errors){
+        isErrorEmpty = true;
         res.render('register',{
             errors:errors
         });
-        res.end()
     }
 
-    else {
+    else if (!isErrorEmpty) {
+        var isError = false;
         // check user name and email to repair
         User.getUserByUsername(username, function (err, user) {
             if (err) res.send(err);
@@ -307,21 +309,24 @@ router.post('/fetchToken', function(req, res){
             User.getUserByEmail(email, function (err, email) {
                 if (err) res.send(err);
                 if (user) {
+                    isError = true;
                     res.render('register', {
                         errors: [{msg: "user name already exist choose  another one"}]
                     });
-                    res.end()
                 }
-                else if (email) {
+                else if (email && !isError) {
+                    isError = true;
                     res.render('register', {
                         errors: [{msg: "email already exist choose  another one"}]
                     });
-                    res.end()
                 }
 
             });
         });
 
+    }
+
+    else if (!isError && !isErrorEmpty) {
 
         req.session.name = name;
         req.session.username = username;
@@ -352,7 +357,6 @@ router.post('/fetchToken', function(req, res){
                 res.render('register', {
                     errors: [{msg: "login to ebay store failed ! , please try again"}]
                 });
-                res.end()
 
                 // res.status(500).send({ error: error.message })
             }
@@ -469,7 +473,7 @@ router.post('/sendemail', function(req, res, next) {
     var mailgun = require('mailgun-js')({apiKey: api_key, domain: domain});;
 
     var data = {
-        from: 'Excited User <me@samples.mailgun.org>',
+        from: 'Excited User <mg.gdeals.net>',
         to: 'sbarelozana@gmail.com',
         subject: 'Hello',
         text: 'Testing some Mailgun awesomness!'
