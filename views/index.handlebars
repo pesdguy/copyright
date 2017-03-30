@@ -42,12 +42,12 @@
                 <input type = "text" id="inputText" class = "form-control">
 
                 <span class = "input-group-btn">
-                  <button id="addItem" class = "btn btn-success" type = "button">
+                        <button id="addItem" class = "btn btn-success" type = "button">
                      Add Item
-                  </button>
-                    <button id="RemoveItem" class = "btn btn-danger" type = "button">
+                        </button>
+                        <button id="RemoveItem" class = "btn btn-danger" type = "button">
                      Remove Item
-                  </button>
+                     </button>
 
                </span>
 
@@ -61,7 +61,7 @@
         var table = document.getElementById("ItemExcluded");
 
         $.get(
-                "http://localhost:3000/ExcludedToken",
+                "/ExcludedToken",
                 function(data) {
                     console.log(data);
                     alert(data);
@@ -71,20 +71,9 @@
                         var cell = row.insertCell(0);
                         cell.innerHTML = data[i]
                     }
-//                        alert('please log in to your ebay store account in the following window');
-////                    window.open("https://signin.ebay.com/ws/eBayISAPI.dll?SignIn&RUName=shay_bar-shaybar-shaytes-qxsioxde&SessID="+data.toString());
-//                        window.open("https://signin.sandbox.ebay.com/ws/eBayISAPI.dll?SignIn&RUName=shay_bar-shaybar-shaytes-qxsioxde&SessID="+data.toString());
-                    //var row = table.insertRow(rowCount);
-                    //var cell1 = row.insertCell(0);
-                    //cell1.innerHTML = text;
-
                 }
         );
-//        var row = table.insertRow(0);
-//        var cell1 = row.insertCell(0);
-//        var cell2 = row.insertCell(1);
-//        cell1.innerHTML = "NEW CELL1";
-//        cell2.innerHTML = "NEW CELL2";
+
         $("#addItem").click(function(){
             var rowCount = $('#ItemExcluded tr').length;
             var text = $('#inputText').val();
@@ -101,13 +90,8 @@
 
             // no issues with adding the items :
             $.get(
-                    "http://localhost:3000/insertExcludedToken?value="+text,
+                    "/insertExcludedToken?value="+text,
                     function(data) {
-                        //console.log(data.status);
-
-//                        alert('please log in to your ebay store account in the following window');
-////                    window.open("https://signin.ebay.com/ws/eBayISAPI.dll?SignIn&RUName=shay_bar-shaybar-shaytes-qxsioxde&SessID="+data.toString());
-//                        window.open("https://signin.sandbox.ebay.com/ws/eBayISAPI.dll?SignIn&RUName=shay_bar-shaybar-shaytes-qxsioxde&SessID="+data.toString());
                         var row = table.insertRow(rowCount);
                         var cell1 = row.insertCell(0);
                         cell1.innerHTML = text;
@@ -124,11 +108,8 @@
 
             if (tableRow.length > 0 ){
                 $.get(
-                        "http://localhost:3000/removeExcludedToken?value="+texts,
+                        "/removeExcludedToken?value="+texts,
                         function(data) {
-//                        alert('please log in to your ebay store account in the following window');
-////                    window.open("https://signin.ebay.com/ws/eBayISAPI.dll?SignIn&RUName=shay_bar-shaybar-shaytes-qxsioxde&SessID="+data.toString());
-//                        window.open("https://signin.sandbox.ebay.com/ws/eBayISAPI.dll?SignIn&RUName=shay_bar-shaybar-shaytes-qxsioxde&SessID="+data.toString());
                             tableRow.remove()
                         }
                 );
