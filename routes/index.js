@@ -176,6 +176,58 @@ router.post('/addItem', function(req, res){
 
 });
 
+router.post('/getMyEbay', function(req, res,next){
+    console.log("sanity ????");
+    //res.send("hey !");
+    // = undefined;
+    ebay.xmlRequest({
+        serviceName : 'Trading',
+        opType : 'GetSessionID',
+
+        // app/environment
+        devId: '9237dc03-c040-489b-853c-4a945c1bb788',
+        certId: 'SBX-cd4754332a2b-8abc-4b44-81f4-35b3',
+        appId: 'shaybar-shaytest-SBX-4cd475433-571f7021',
+        sandbox: true,
+        // per user
+        params:{
+            RuName:'shay_bar-shaybar-shaytes-qxsioxde'
+        }
+    }, function(error, results) {
+        if (error){
+            res.status(500).send({ error: error.message })
+        }
+        else {
+            // //req.session.ID = results['SessionID'];
+            // res.setHeader('Set-Cookie', cookie.serialize('sessionId', results['SessionID'], {
+            //     maxAge: 60 * 60 * 24 * 7 // 1 week
+            // }));
+            // request('https://signin.ebay.com/ws/eBayISAPI.dll?SignIn&RUName=shay_bar-shaybar-shaytes-qxsioxde&SessID='+req.session.ID, function (error, response, body) {
+            //     console.log('error:', error); // Print the error if one occurred
+            //     console.log('statusCode:', response && response.statusCode); // Print the response status code if a response was received
+            //     console.log('body:', body); // Print the HTML for the Google homepage.
+            // });
+            //console.log(JSON.stringify(js2xmlparser.parse(results)));
+            //res.setHeader('Content-Type', 'application/json');
+            req.session.ID = results['SessionID'];
+            console.log(results['SessionID']);
+            res.send(results['SessionID']);
+            //res.render('register');
+            //res.redirect('https://signin.ebay.com/ws/eBayISAPI.dll?SignIn&RUName=shay_bar-shaybar-shaytes-qxsioxde&SessID='+req.session.ID);
+            // res.writeHead(301,
+            //     {Location: 'https://signin.ebay.com/ws/eBayISAPI.dll?SignIn&RUName=shay_bar-shaybar-shaytes-qxsioxde&SessID='+req.session.ID}
+            // );
+            // res.end();
+
+        }
+    });
+
+
+
+});
+
+
+
 router.get('/getMyEbay', function(req, res,next){
     console.log("sanity ????");
     //res.send("hey !");
@@ -212,6 +264,7 @@ router.get('/getMyEbay', function(req, res,next){
             req.session.ID = results['SessionID'];
             console.log(results['SessionID']);
             res.send(results['SessionID']);
+            //res.render('register');
             //res.redirect('https://signin.ebay.com/ws/eBayISAPI.dll?SignIn&RUName=shay_bar-shaybar-shaytes-qxsioxde&SessID='+req.session.ID);
             // res.writeHead(301,
             //     {Location: 'https://signin.ebay.com/ws/eBayISAPI.dll?SignIn&RUName=shay_bar-shaybar-shaytes-qxsioxde&SessID='+req.session.ID}
@@ -220,9 +273,6 @@ router.get('/getMyEbay', function(req, res,next){
 
         }
     });
-
-
-
 });
 
 

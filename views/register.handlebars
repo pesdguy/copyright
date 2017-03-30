@@ -4,14 +4,16 @@
         <div class="alert alert-danger">{{msg}}</div>
     {{/each}}
 {{/if}}
-<form method="post" action="/fetchToken">
+<form id="myform">
     <div class="form-group">
         <label>Add your Store</label>
-        <a style="padding-left: 10px;" class="a_link" onclick="myFunction()" href="#" data-click-prevent="true">
+        <a style="padding-left: 10px;" class="a_link" id="link_ebay"  href="#" data-click-prevent="true">
             <img src = "/ebay.png" style="padding-left:10px; height:50px;" class = "img-thumbnail">
             <!--<img data-ng-src="ebay.png" alt="eBay" class="store-logo" src="ebay.png">-->
         </a>
     </div>
+</form>
+<form method="post" action="/fetchToken">
     <div class="form-group">
         <label>Name</label>
         <input type="text" class="form-control" placeholder="Name" name="name">
@@ -32,36 +34,24 @@
         <!--<i class="fa fa-plus"></i><span>Add a New Store</span>-->
     <!--</a>-->
     <script>
-        function myFunction() {
-            $.get(
-                "http://localhost:3000/getMyEbay",
-                function(data) {
-                    alert('please log in to your ebay store account in the following window');
-//                    window.open("https://signin.ebay.com/ws/eBayISAPI.dll?SignIn&RUName=shay_bar-shaybar-shaytes-qxsioxde&SessID="+data.toString());
-                    window.open("https://signin.sandbox.ebay.com/ws/eBayISAPI.dll?SignIn&RUName=shay_bar-shaybar-shaytes-qxsioxde&SessID="+data.toString());
+        $(document).ready(function() {
+            $("#link_ebay").on('click',function () {
+                $('#myform').submit()
+                //window.open("https://signin.sandbox.ebay.com/ws/eBayISAPI.dll?SignIn&RUName=shay_bar-shaybar-shaytes-qxsioxde&SessID=" + data.toString());
+            });
 
-// $.ajax({
-//                        type: "POST",
-//                        dataType: 'jsonp',
-//                        url: "https://signin.ebay.com/ws/eBayISAPI.dll?SignIn&RUName=shay_bar-shaybar-shaytes-qxsioxde&SessID="+data.toString(),
-//                        crossDomain : true,
-//                        xhrFields: {
-//                            withCredentials: false
-//                        }
-//                    })
-//                            .done(function( data ) {
-//                                console.log("done");
-//                            })
-//                            .fail( function(xhr, textStatus, errorThrown) {
-//                                alert(xhr.responseText);
-//                                alert(textStatus);
-//                                alert(errorThrown)
-//                            });
-
-
-                }
-            );
-          }
+            $('#myform').on('submit', function (e) {
+                e.preventDefault();
+                $.ajax({
+                    type: 'post',
+                    url: '/getMyEbay',
+                    success: function (data) {
+                        alert('form was submitted:'+ data);
+                        window.open("https://signin.sandbox.ebay.com/ws/eBayISAPI.dll?SignIn&RUName=shay_bar-shaybar-shaytes-qxsioxde&SessID=" + data.toString());
+                    }
+                });
+            });
+        });
     </script>
 
     <div class="form-group">
