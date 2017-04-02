@@ -28,6 +28,7 @@ print("Done")
 
 
 parsed_json = json.loads(sys.argv[1])
+
 ImageArr = parsed_json['images']
 a = time.time()
 i = 0
@@ -36,32 +37,10 @@ for item in ImageArr:
     urllib.urlretrieve(item['image_link'],item['image_name']+'_new')
     img = cv2.imread(item['image_name']+'_new')
     rows, cols, var = img.shape
-    M = cv2.getRotationMatrix2D((cols/2,rows/2),5,0.9)
-    dst = cv2.warpAffine(img,M,(cols,rows))
-
-    # img2 = np.zeros((rows, cols, var), np.uint8)
-    # cv2.rectangle(img2,(0, 0),(cols, rows), (255, 255, 255),-1)
-
-    img2gray = cv2.cvtColor(dst, cv2.COLOR_BGR2GRAY)
-    ret, mask = cv2.threshold(img2gray, 10, 255, cv2.THRESH_BINARY)
-    mask_inv = cv2.bitwise_not(mask)
-
-    dst[mask_inv == 255] = (255, 255, 255)
-    #dst[mask_inv == 255] = (255, 255, 255)
-#    dst[mask_inv] = (255,255,255)
-
-#    dst[mask_inv == 255] = (255, 255, 255)
-
- #   dst[mask == 255] = (255, 255, 255)
-
-
-    # #    img3 = np.zeros((rows, cols, var), np.uint8)
-#     dst5 = cv2.add(img2,dst)
-#     img[0:rows, 0:cols] = dst5
-
-    # cv2.circle(img2, (447, 63), 63, (0, 0, 255), -1)
-
+    M = cv2.getRotationMatrix2D((cols/2,rows/2),8,0.9)
+    dst = cv2.warpAffine(img,M,(cols,rows),borderMode=cv2.BORDER_CONSTANT,borderValue=(255,255,255))
     cv2.imwrite(item['image_name']+'_new.jpg',dst)
+
     i+=1
 b = time.time()
 print "finished: "+str(b-a)
