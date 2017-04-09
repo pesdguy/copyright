@@ -35,6 +35,12 @@ var UserSchema = mongoose.Schema({
     },
     excludedItems:{
         type: Array , "default":[]
+    },
+    numberOfDays:{
+        type: Number , "default":3
+    },
+    ebayTokens:{
+        type : Array , "default" : []
     }
 });
 

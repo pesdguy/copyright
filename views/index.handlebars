@@ -40,6 +40,7 @@
         <div class = "col-lg-8">
             <div class = "input-group">
                 <input type = "text" id="inputText" class = "form-control">
+                <!--<input id="ex1" data-slider-id='ex1Slider' type="text" data-slider-min="0" data-slider-max="120" data-slider-step="1" data-slider-value="3"/>-->
 
                 <span class = "input-group-btn">
                         <button id="addItem" class = "btn btn-success" type = "button">
@@ -50,15 +51,145 @@
                      </button>
 
                </span>
-
             </div><!-- /input-group -->
         </div><!-- /.col-lg-6 -->
     </div><!-- /.row -->
 </form>
 
+<form class = "bs-example bs-example-form" style="margin-top: 20px" role = "form">
+    <div class = "row">
+        <div class = "col-lg-8">
+            <div class = "input-group">
+                <h3 style="padding-bottom: 5px">Number of Days :</h3>
+                <input id="ex1" data-slider-id='ex1Slider' type="text" data-slider-min="1" data-slider-max="120" data-slider-step="1" data-slider-value="3"/>
+                <!--<input id="ex1" data-slider-id='ex1Slider' type="text" data-slider-min="0" data-slider-max="120" data-slider-step="1" data-slider-value="3"/>-->
+                <span class = "input-group-btn">
+                        <button id="ChangeDay" class = "btn btn-info" type = "button">
+                    Save Setting
+                        </button>
+               </span>
+            </div><!-- /input-group -->
+        </div><!-- /.col-lg-6 -->
+    </div>
+</form>
+
+<div id="myModal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true"></button>
+        <h3 id="myModalLabel">Delete</h3>
+    </div>
+    <div class="modal-body">
+        <p></p>
+    </div>
+    <div class="modal-footer">
+        <button class="btn" data-dismiss="modal" aria-hidden="true">Close</button>
+        <button data-dismiss="modal" class="btn red" id="btnYes">Confirm</button>
+    </div>
+</div>
+
+<form class = "bs-example bs-example-form" style="margin-top: 20px" role = "form">
+    <h3 style="padding-bottom: 5px">My Ebay Stores :</h3>
+
+<table id="StoreTable" class="table table-striped table-hover table-users">
+    <thead>
+    <tr>
+
+        <th class="hidden-phone">Name</th>
+        <th></th>
+        <th></th>
+        <!--<th class="hidden-phone">Token</th>-->
+        <th class="hidden-phone"></th>
+        <th class="hidden-phone"></th>
+        <th></th>
+        <th></th>
+        <th></th>
+    </tr>
+    </thead>
+
+    <tbody id="TableBody">
+
+    <!--<tr>-->
+
+        <!--<td class="hidden-phone">johnny</td>-->
+        <!--<td>john</td>-->
+        <!--<td>doe</td>-->
+        <!--<td class="hidden-phone">dsd@gmail.com</td>-->
+        <!--<td class="hidden-phone">active</td>-->
+        <!--<td class="hidden-phone">10/12/1999</td>-->
+
+        <!--<td><span class="label label-warning">Not Active</span></td>-->
+
+        <!--<td><a class="btn mini blue-stripe" href="{site_url()}admin/editFront/1">Edit</a></td>-->
+
+        <!--<td><a href="#" class="confirm-delete btn mini red-stripe" role="button" data-title="johnny" data-id="1">Delete</a></td>-->
+    <!--</tr>-->
+    <!--<tr>-->
+
+        <!--<td class="hidden-phone">kitty</td>-->
+        <!--<td>jane</td>-->
+        <!--<td>doe</td>-->
+        <!--<td class="hidden-phone">dasasasd@gmail.com</td>-->
+        <!--<td class="hidden-phone">active</td>-->
+        <!--<td class="hidden-phone">10/1/1999</td>-->
+
+        <!--&lt;!&ndash;<td><span class="label label-danger">Activo</span></td>&ndash;&gt;-->
+
+        <!--&lt;!&ndash;<td><a class="btn mini blue-stripe" href="{site_url()}admin/editFront/2">Edit</a></td>&ndash;&gt;-->
+
+        <!--<td><a href="#" id="100" class="confirm-delete btn mini red-stripe" role="button" data-title="kitty" data-id="2">Delete</a></td>-->
+    <!--</tr>-->
+
+    </tbody>
+
+</table>
+</form>
+
+<form id="myform">
+    <div class="form-group">
+        <label>Add Another Store:</label>
+        <a style="padding-left: 10px;" class="a_link" id="link_ebay"  href="#" data-click-prevent="true">
+            <img src = "/ebay.png" style="padding-left:10px; height:50px;" class = "img-thumbnail">
+            <!--<img data-ng-src="ebay.png" alt="eBay" class="store-logo" src="ebay.png">-->
+        </a>
+    </div>
+</form>
+
     <script>
-    $(document).ready(function(){
+        $(document).on('click','.confirm-delete', function() {
+            var id = $(this).data('id');
+            alert("id is "+id);
+            $.post(
+                    "/removeStore",{value:id},
+                    function(data) {
+                        alert(data['status']);
+                       window.location.reload(false);
+                    }
+            );
+
+        });
+
+        $(document).ready(function(){
         var table = document.getElementById("ItemExcluded");
+        var StoreTable = document.getElementById("StoreTable");
+
+        //var mySlider = $("input.slider").bootstrapSlider();
+
+//        $('#ex1').slider({
+//            formatter: function(value) {
+//                return 'Current value: ' + value;
+//            }
+//        });
+//            alert("loade")
+//            function deleteMe() {
+//                alert("im here 1");
+//                $('.confirm-delete').on('click', function (e) {
+//                    e.preventDefault();
+//
+//                    var id = $(this).data('id');
+//                    alert(id);
+//                });
+//            }
+//        }
 
         $.get(
                 "/ExcludedToken",
@@ -73,6 +204,104 @@
                     }
                 }
         );
+
+        $("#link_ebay").on('click',function () {
+            $('#myform').submit()
+            //window.open("https://signin.sandbox.ebay.com/ws/eBayISAPI.dll?SignIn&RUName=shay_bar-shaybar-shaytes-qxsioxde&SessID=" + data.toString());
+        });
+
+        $('#myform').on('submit', function (e) {
+            e.preventDefault();
+            $.ajax({
+                type: 'post',
+                url: '/getMyEbay',
+                success: function (data) {
+                    alert('form was submitted:'+ data);
+                    window.open("https://signin.ebay.com/ws/eBayISAPI.dll?SignIn&RUName=G_DEALS-GDEALSc7f-43c1--ettpmtmup&SessID=" + data.toString());
+                    //sleepFor();
+                    alert("starting to fetch");
+                    $.ajax({
+                        type: 'get',
+                        url: '/fetchMyToken',
+                        success: function (data) {
+                            alert(data);
+                        }
+                    });
+                    window.location.reload(false);
+                }
+            });
+        });
+
+
+
+        function sleepFor( sleepDuration ){
+            var now = new Date().getTime();
+            while(new Date().getTime() < now + sleepDuration){ /* do nothing */ }
+        }
+
+        $.get(
+                "/days",
+                function(data) {
+                    var mySlider = $('#ex1').slider();
+                    var num = parseInt(data)
+                    mySlider.slider('setValue', num)
+                }
+        );
+
+        $.get(
+                "/getMyStores",
+                function(data) {
+                    console.log(data);
+                    alert(data);
+                    if (data.length%2 != 0)
+                        alert ("missing data or name");
+                    else {
+                        for (var i = 0; i < data.length / 2; i++) {
+                            alert(data[i]);
+                            var strData = data[i + data.length / 2];
+                            //var fragment = create('<tr><td>johnny</td> <td>john</td> <td>doe</td> <td>dsd@gmail.com</td> <td>active</td> <td>10/12/1999</td> <td><a>Delete</a></td></tr>');
+                            //document.getElementById("TableBody").insertBefore(fragment, document.getElementById("TableBody").childNodes[0]);
+                            document.getElementById("TableBody").insertAdjacentHTML('beforeend', '<tr><td style="min-width: 200px;">' + data[i] + '</td>  <td style="text-overflow: ellipsis;"></td> <td></td> <td></td> <td><a class="confirm-delete btn mini red-stripe" role="button" data-title="None" data-id="' + strData + '">Delete</a></td></tr>')
+                        }
+                    }
+                }
+        );
+
+        $('#ChangeDay').click(function(){
+            var mySlider = $('#ex1').slider();
+            var value = mySlider.slider('getValue');
+            $.get(
+                    "/updateDays?value="+value,
+                    function(data) {
+                        console.log(data);
+                        alert(data);
+                    }
+            );
+        });
+
+//        $('#myModal').on('show', function() {
+//            var tit = $('.confirm-delete').data('title');
+//
+//            $('#myModal .modal-body p').html("Desea eliminar al usuario " + '<b>' + tit +'</b>' + ' ?');
+//            var id = $(this).data('id'),
+//                    removeBtn = $(this).find('.danger');
+//        })
+
+//        $('#btnYes').click(function() {
+//            // handle deletion here
+//            var id = $('#myModal').data('id');
+//            $('[data-id='+id+']').parents('tr').remove();
+//            $('#myModal').modal('hide');
+//
+//        });
+
+        // With JQuery
+        $('#ex1').slider({
+            formatter: function(value) {
+                return 'Current value: ' + value;
+            }
+        });
+
 
         $("#addItem").click(function(){
             var rowCount = $('#ItemExcluded tr').length;

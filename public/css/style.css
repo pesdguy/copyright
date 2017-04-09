@@ -89,3 +89,7 @@ body {
 footer{
   margin-top:40px;
 }
+
+#ex1Slider .slider-selection {
+  background: #BABABA;
+}
