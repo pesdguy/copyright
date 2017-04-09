@@ -54,7 +54,6 @@ config = {
 
 
 
-
 parsed_json = json.loads(sys.argv[1])
 
 ImageArr = parsed_json['images']
@@ -70,8 +69,18 @@ for item in ImageArr:
     rows, cols, var = img.shape
     M = cv2.getRotationMatrix2D((cols/2,rows/2),8,0.9)
     dst = cv2.warpAffine(img,M,(cols,rows),borderMode=cv2.BORDER_CONSTANT,borderValue=(255,255,255))
+  # the same size as it was before.
+    new_cols = int(cols*1.111111111111111111111111111111)
+    new_rows = int(rows*1.111111111111111111111111111111)
+    # at least 500
+    if (new_cols < 500):
+        new_cols = 500
+    if (new_rows < 500):
+        new_rows = 500
+    bigger = cv2.resize(dst, (new_cols,new_rows))
+
     #cv2.imwrite(item['image_name']+'_new.jpg',dst)
-    enc = cv2.imencode('.jpg',dst)[1]
+    enc = cv2.imencode('.jpg',bigger)[1]
     #arr.append(base64.encodestring((enc)).replace('\n',''))
     f = open( 'file'+str(i), 'w+' )
     f.write( base64.b64decode( base64.encodestring((enc)).replace('\n','') ) )

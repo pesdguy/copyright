@@ -39,7 +39,11 @@ for item in ImageArr:
     rows, cols, var = img.shape
     M = cv2.getRotationMatrix2D((cols/2,rows/2),8,0.9)
     dst = cv2.warpAffine(img,M,(cols,rows),borderMode=cv2.BORDER_CONSTANT,borderValue=(255,255,255))
-    cv2.imwrite(item['image_name']+'_new.jpg',dst)
+    # the same size as it was before.
+    new_cols = int(cols*1.111111111111111111111111111111)
+    new_rows = int(rows*1.111111111111111111111111111111)
+    bigger = cv2.resize(dst, (new_cols,new_rows))
+    cv2.imwrite(item['image_name']+'_new.jpg',bigger)
 
     i+=1
 b = time.time()

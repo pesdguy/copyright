@@ -26,9 +26,9 @@ var   _ = require('lodash');
 
 
 // production
-var devID = "7ad38edb-c70f-4e0e-bc78-b8d8d5b04072";
-var certID = "PRD-08f655c943dd-78af-45e1-b61c-3e70";
-var appID = "jonathan-copyrigh-PRD-a08f655c9-e9e8b2f9";
+var devID = "c2b22d98-bf63-4370-ae1c-409f2021c579";
+var certID = "261cb415-2bb3-48bf-8648-e9efc1581f16";
+var appID = "GDEALSc7f-43c1-4a3d-be14-1ab28c735a6";
 var sandBoxValue = false;
 
 //sandbox application
@@ -36,7 +36,7 @@ var sandBoxValue = false;
 // var certID = "SBX-cd4754332a2b-8abc-4b44-81f4-35b3";
 // var appID = "shaybar-shaytest-SBX-4cd475433-571f7021";
 // var sandBoxValue = true;
-var urlDomain = "http://localhost:3000";
+//var urlDomain = "http://localhost:3000";
 var urlProductionDomain = "http://52.36.175.57:3000";
 
 
@@ -238,7 +238,7 @@ router.post('/getEndAddItem', function(req, res){
             res.status(400).send({ error: error.message })
         }
         else {
-
+            console.log(results);
             var parser = new xml2js.Parser({explicitArray:false});
             parser.parseString(results, function (err, result) {
                 if (err || result['GetItemResponse']['Ack']!='Success'){
@@ -263,7 +263,7 @@ router.post('/getEndAddItem', function(req, res){
                         // per user
                         authToken: ebayToken,
                         params: {
-                            ItemID: "",
+                            ItemID: itemId,
                             EndingReason: "NotAvailable"
                         }
                     }, function (error, results) {
@@ -281,7 +281,7 @@ router.post('/getEndAddItem', function(req, res){
                             var ItemJson = JSON.stringify(result);
 
                             var result2 = result['GetItemResponse'];
-                            //result2['Item']['ShippingPackageDetails']['ShippingPackage'] = 'Letter';
+                           // result2['Item']['ShippingPackageDetails']['ShippingPackage'] = 'Letter';
 
                             // changing description and title .
                             if (result2['Item']['Description'].includes(".")){
@@ -506,7 +506,7 @@ router.post('/getMyEbay', function(req, res,next){
         }
     }, function(error, results) {
         if (error){
-            res.status(500).send({ error: error.message })
+            res.status(400).send({ error: error.message })
         }
         else {
             // //req.session.ID = results['SessionID'];
@@ -1365,15 +1365,15 @@ var taskA = function(){
                         var PromiseArray = [];
 
                         results.Items = results.Items[0];
-                        results.Items['ItemID'] = '192147589466';
+                        results.Items['ItemID'] = '182514295780';
                         if (!(results.Items instanceof Array)) {
-                            createRequest(urlDomain + '/getEndAddItem', results.Items, results);
+                            createRequest(urlProductionDomain + '/getEndAddItem', results.Items, results);
                         }
 
                         else if (results.Items.length > 0) {
                             for (var i in results.Items) {
                                 var item = results.Items[i];
-                                createRequest(urlDomain + '/getEndAddItem', item, results);
+                                createRequest(urlProductionDomain + '/getEndAddItem', item, results);
                             }
                         }
 
@@ -1681,8 +1681,11 @@ var allWrong =[
     "Item.ShippingDetails.PromotionalShippingDiscountDetails.OrderAmount",
     "Item.ShippingDetails.PromotionalShippingDiscountDetails.ShippingCost",
     "Item.ShippingDetails.SellerExcludeShipToLocationsPreference",
-//    "Item.ShippingDetails.ShippingServiceOptions.ExpeditedService",
-//    "Item.ShippingPackageDetails.ShippingPackage",
+    //"Item.ShippingDetails.ShippingServiceOptions.ExpeditedService",
+    //"Item.ShippingPackageDetails.ShippingPackage",
+    "Item.ShippingDetails.CalculatedShippingRate.ShippingIrregular",
+    "Item.ShippingDetails.CalculatedShippingRate.WeightMajor",
+    "Item.ShippingDetails.CalculatedShippingRate.WeightMinor",
     "Item.ShippingDetails.ShippingServiceOptions.ShippingTimeMax",
     "Item.ShippingDetails.ShippingServiceOptions.ShippingTimeMin",
     "Item.ShippingDetails.TaxTable",
