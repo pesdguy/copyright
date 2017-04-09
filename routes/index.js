@@ -7,11 +7,9 @@ var userToken = "";
 
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
-var all_items = null;
 var express = require('express');
 var router = express.Router();
 //var User = require('../models/user');
-var PythonShell = require('python-shell');
 var imgur = require('imgur');
 var Q = require('q');
 var js2xmlparser = require("js2xmlparser");
@@ -242,7 +240,7 @@ router.post('/getEndAddItem', function(req, res){
             var parser = new xml2js.Parser({explicitArray:false});
             parser.parseString(results, function (err, result) {
                 if (err || result['GetItemResponse']['Ack']!='Success'){
-                    res.status(400).send({ error: "failed in getting item" })
+                    res.status(400).send(JSON.stringify(err));
                 }
                 else {
                     console.log(" ##### successfully got item for  :" + req.session.itemId);
@@ -267,16 +265,15 @@ router.post('/getEndAddItem', function(req, res){
                             EndingReason: "NotAvailable"
                         }
                     }, function (error, results) {
-                        // if (error) {
-                        //   console.log("error in deleting item: "+req.session.itemId);
-
-                        //     res.status(400).send({error: error.message})
-                        // }
                         if (error) {
-                            //console.log(" ##### successfully delete item for  :" + req.session.itemId);
+                          console.log("error in deleting item: "+req.session.itemId);
+                            res.status(400).send(JSON.stringify(error))
+                        }
+                        else{
+                            console.log(" ##### successfully delete item for  :" + req.session.itemId);
                             //console.log(JSON.stringify(results));
 
-                            //console.log(JSON.stringify(result));
+                            console.log(JSON.stringify(result));
                             //res.setHeader('Content-Type', 'application/json');
                             var ItemJson = JSON.stringify(result);
 
@@ -1365,7 +1362,9 @@ var taskA = function(){
                         var PromiseArray = [];
 
                         results.Items = results.Items[0];
-                        results.Items['ItemID'] = '182514295780';
+                        console.log("only running for one item : "+results.Items['ItemID']);
+//                        results.Items['ItemID'] = '182514295780';
+//                        results.Items['ItemID'] = '192147589466';
                         if (!(results.Items instanceof Array)) {
                             createRequest(urlProductionDomain + '/getEndAddItem', results.Items, results);
                         }
