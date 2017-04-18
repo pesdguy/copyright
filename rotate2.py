@@ -58,6 +58,7 @@ parsed_json = json.loads(sys.argv[1])
 
 ImageArr = parsed_json['images']
 ebayToken = parsed_json['ebayToken']
+angle = parsed_json['angle']
 a = time.time()
 i = 0
 arr = []
@@ -67,12 +68,12 @@ for item in ImageArr:
     urllib.urlretrieve(item['image_link'],item['image_name']+'_new')
     img = cv2.imread(item['image_name']+'_new')
     rows, cols, var = img.shape
-    M = cv2.getRotationMatrix2D((cols/2,rows/2),8,0.9)
+    M = cv2.getRotationMatrix2D((cols/2,rows/2),angle,0.9)
     dst = cv2.warpAffine(img,M,(cols,rows),borderMode=cv2.BORDER_CONSTANT,borderValue=(255,255,255))
   # the same size as it was before.
     new_cols = int(cols*1.111111111111111111111111111111)
     new_rows = int(rows*1.111111111111111111111111111111)
-    # at least 500
+    # at least 500*500
     if (new_cols < 500):
         new_cols = 500
     if (new_rows < 500):

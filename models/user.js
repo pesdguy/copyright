@@ -39,6 +39,12 @@ var UserSchema = mongoose.Schema({
     numberOfDays:{
         type: Number , "default":3
     },
+    angleToChange:{
+        type: Number , "default":5
+    },
+    WarningItems:{
+        type: Array , "default":[]
+    },
     ebayTokens:{
         type : Array , "default" : []
     }

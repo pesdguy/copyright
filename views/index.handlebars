@@ -63,11 +63,29 @@
                 <h3 style="padding-bottom: 5px">Number of Days :</h3>
                 <input id="ex1" data-slider-id='ex1Slider' type="text" data-slider-min="1" data-slider-max="120" data-slider-step="1" data-slider-value="3"/>
                 <!--<input id="ex1" data-slider-id='ex1Slider' type="text" data-slider-min="0" data-slider-max="120" data-slider-step="1" data-slider-value="3"/>-->
-                <span class = "input-group-btn">
-                        <button id="ChangeDay" class = "btn btn-info" type = "button">
-                    Save Setting
-                        </button>
-               </span>
+                <!--<span class = "input-group-btn">-->
+                        <!--<button id="ChangeDay" class = "btn btn-info" type = "button">-->
+                    <!--Save Setting-->
+                        <!--</button>-->
+               <!--</span>-->
+            </div><!-- /input-group -->
+        </div><!-- /.col-lg-6 -->
+    </div>
+</form>
+
+<form class = "bs-example bs-example-form" style="margin-top: 20px" role = "form">
+    <div class = "row">
+        <div class = "col-lg-8">
+            <div class = "input-group">
+                <h3 style="padding-bottom: 5px">Angle to change :</h3>
+                <input id="angle" data-slider-id='angleSlider' type="text" data-slider-min="0" data-slider-max="15" data-slider-step="1" data-slider-value="3"/>
+                <!--<input id="ex1" data-slider-id='ex1Slider' type="text" data-slider-min="0" data-slider-max="120" data-slider-step="1" data-slider-value="3"/>-->
+                <label id="disableRotation" style="margin-left: 20px" class="custom-control custom-checkbox">
+                    <input id="disableCheckBox" type="checkbox" class="custom-control-input">
+                    <span class="custom-control-indicator"></span>
+                    <span class="custom-control-description">Disable picture rotation</span>
+                </label>
+
             </div><!-- /input-group -->
         </div><!-- /.col-lg-6 -->
     </div>
@@ -86,6 +104,32 @@
         <button data-dismiss="modal" class="btn red" id="btnYes">Confirm</button>
     </div>
 </div>
+
+<form class = "bs-example bs-example-form" style="margin-top: 20px" role = "form">
+    <h3 style="padding-bottom: 5px">Warning Items :</h3>
+
+    <table id="StoreTable" class="table table-striped table-hover table-users">
+        <thead>
+        <tr>
+
+            <th class="hidden-phone">Item ID</th>
+            <th></th>
+            <th></th>
+            <!--<th class="hidden-phone">Token</th>-->
+            <th class="hidden-phone"></th>
+            <th class="hidden-phone"></th>
+            <th></th>
+            <th></th>
+            <th></th>
+        </tr>
+        </thead>
+
+        <tbody id="WarningTableBody">
+
+        </tbody>
+
+    </table>
+</form>
 
 <form class = "bs-example bs-example-form" style="margin-top: 20px" role = "form">
     <h3 style="padding-bottom: 5px">My Ebay Stores :</h3>
@@ -107,37 +151,6 @@
     </thead>
 
     <tbody id="TableBody">
-
-    <!--<tr>-->
-
-        <!--<td class="hidden-phone">johnny</td>-->
-        <!--<td>john</td>-->
-        <!--<td>doe</td>-->
-        <!--<td class="hidden-phone">dsd@gmail.com</td>-->
-        <!--<td class="hidden-phone">active</td>-->
-        <!--<td class="hidden-phone">10/12/1999</td>-->
-
-        <!--<td><span class="label label-warning">Not Active</span></td>-->
-
-        <!--<td><a class="btn mini blue-stripe" href="{site_url()}admin/editFront/1">Edit</a></td>-->
-
-        <!--<td><a href="#" class="confirm-delete btn mini red-stripe" role="button" data-title="johnny" data-id="1">Delete</a></td>-->
-    <!--</tr>-->
-    <!--<tr>-->
-
-        <!--<td class="hidden-phone">kitty</td>-->
-        <!--<td>jane</td>-->
-        <!--<td>doe</td>-->
-        <!--<td class="hidden-phone">dasasasd@gmail.com</td>-->
-        <!--<td class="hidden-phone">active</td>-->
-        <!--<td class="hidden-phone">10/1/1999</td>-->
-
-        <!--&lt;!&ndash;<td><span class="label label-danger">Activo</span></td>&ndash;&gt;-->
-
-        <!--&lt;!&ndash;<td><a class="btn mini blue-stripe" href="{site_url()}admin/editFront/2">Edit</a></td>&ndash;&gt;-->
-
-        <!--<td><a href="#" id="100" class="confirm-delete btn mini red-stripe" role="button" data-title="kitty" data-id="2">Delete</a></td>-->
-    <!--</tr>-->
 
     </tbody>
 
@@ -205,6 +218,28 @@
                 }
         );
 
+            $("#disableRotation").click(function() {
+                if($('#disableCheckBox')[0].checked) {
+                    alert("here1");
+                    $("#angle").slider("disable");
+                    var mySlider2 = $('#angle').slider();
+                    var value2 = 0;
+                    $.get(
+                            "/updateAngle?value="+value2,
+                            function(data) {
+                                console.log(data);
+                                alert(data);
+                            }
+                    );
+                    mySlider2.slider('setValue', value2)
+                }
+                else {
+                    alert("here2");
+                    $("#angle").slider("enable");
+
+                }
+            });
+
         $("#link_ebay").on('click',function () {
             $('#myform').submit()
             //window.open("https://signin.sandbox.ebay.com/ws/eBayISAPI.dll?SignIn&RUName=shay_bar-shaybar-shaytes-qxsioxde&SessID=" + data.toString());
@@ -243,7 +278,7 @@
                 "/days",
                 function(data) {
                     var mySlider = $('#ex1').slider();
-                    var num = parseInt(data)
+                    var num = parseInt(data);
                     mySlider.slider('setValue', num)
                 }
         );
@@ -267,6 +302,26 @@
                 }
         );
 
+
+            $.get(
+                    "/getMyWarningItems",
+                    function(data) {
+                        console.log(data);
+                        alert(data);
+                        if (data.length == 0)
+                            alert ("no warning item");
+                        else {
+                            for (var i = 0; i < data.length ; i++) {
+                                alert(data[i]);
+                                var strData = data[i];
+                                //var fragment = create('<tr><td>johnny</td> <td>john</td> <td>doe</td> <td>dsd@gmail.com</td> <td>active</td> <td>10/12/1999</td> <td><a>Delete</a></td></tr>');
+                                //document.getElementById("TableBody").insertBefore(fragment, document.getElementById("TableBody").childNodes[0]);
+                                document.getElementById("WarningTableBody").insertAdjacentHTML('beforeend', '<tr><td style="min-width: 200px;">' + data[i] + '</td>  <td style="text-overflow: ellipsis;"></td> <td></td> <td></td> <td></td></tr>')
+                            }
+                        }
+                    }
+            );
+
         $('#ChangeDay').click(function(){
             var mySlider = $('#ex1').slider();
             var value = mySlider.slider('getValue');
@@ -278,6 +333,71 @@
                     }
             );
         });
+
+//            $('#ex1').mouseup(function(){
+//                alert('mouse up !!!');
+//                var mySlider = $('#ex1').slider();
+//                var value = mySlider.slider('getValue');
+//                $.get(
+//                        "/updateDays?value="+value,
+//                        function(data) {
+//                            console.log(data);
+//                            alert(data);
+//                        }
+//                );
+//            });
+
+            $('#saveSettings').click(function(){
+                var mySlider = $('#ex1').slider();
+                var value = mySlider.slider('getValue');
+                $.get(
+                        "/updateDays?value="+value,
+                        function(data) {
+                            console.log(data);
+                            alert(data);
+                        }
+                );
+
+                var mySlider2 = $('#angleSlider').slider();
+                var value2 = mySlider2.slider('getValue');
+                $.get(
+                        "/updateAngle?value="+value2,
+                        function(data) {
+                            console.log(data);
+                            alert(data);
+                        }
+                );
+
+
+            });
+
+//            $('#ChangeAngle').click(function(){
+//                var mySlider = $('#angleSlider').slider();
+//                var value = mySlider.slider('getValue');
+//                $.get(
+//                        "/updateAngle?value="+value,
+//                        function(data) {
+//                            console.log(data);
+//                            alert(data);
+//                        }
+//                );
+//            });
+
+
+            $.get(
+                    "/Angle",
+                    function(data) {
+                        var mySlider = $('#angle').slider();
+                        var num = parseInt(data);
+                        mySlider.slider('setValue', num)
+
+                        if (num == 0 ){
+                            $('#disableCheckBox')[0].checked = true;
+                            $("#angle").slider("disable");
+                        }
+
+                    }
+            );
 
 //        $('#myModal').on('show', function() {
 //            var tit = $('.confirm-delete').data('title');
@@ -300,7 +420,37 @@
             formatter: function(value) {
                 return 'Current value: ' + value;
             }
+        }).on('slideStop',function(sliderEvent){
+            $.get(
+                    "/updateDays?value="+sliderEvent.value,
+                    function(data) {
+                        console.log(data);
+                        alert(data);
+                    }
+            );
         });
+            $('#angle').slider({
+                formatter: function(value) {
+                    return 'Current value: ' + value;
+                }
+            }).on('slideStop',function(sliderEvent){
+                $.get(
+                        "/updateAngle?value="+sliderEvent.value,
+                        function(data) {
+                            console.log(data);
+                            alert(data);
+                        }
+                );
+            });
+
+
+//            $('#ex1').slider({
+//                from: 0, to: 120, smooth: true, step: 1, round: 0,
+//                callback: function (value) {
+//                    alert(value)
+//
+//                }
+//            });
 
 
         $("#addItem").click(function(){

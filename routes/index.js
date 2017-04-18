@@ -20,6 +20,9 @@ var User = require('../models/user');
 var PythonShell = require('python-shell');
 var sleep = require('sleep');
 var   _ = require('lodash');
+var generator = require('generate-password');
+var bcrypt = require('bcryptjs');
+
 
 
 
@@ -34,9 +37,10 @@ var sandBoxValue = false;
 // var certID = "SBX-cd4754332a2b-8abc-4b44-81f4-35b3";
 // var appID = "shaybar-shaytest-SBX-4cd475433-571f7021";
 // var sandBoxValue = true;
-//var urlDomain = "http://localhost:3000";
+var urlLocalDomain = "http://localhost:3000";
 var urlProductionDomain = "http://52.36.175.57:3000";
 
+var urlToUse = urlProductionDomain;
 
 
 // Get Homepage
@@ -210,6 +214,7 @@ router.post('/getEndAddItem', function(req, res){
 
     var itemId = req.body.itemId;
     var ebayToken = req.body.authToken;
+    req.session.angle = req.body.angle;
     req.session.itemId = itemId;
     req.session.ebayToken = ebayToken;
     req.session.username = req.body.username;
@@ -265,13 +270,16 @@ router.post('/getEndAddItem', function(req, res){
                             EndingReason: "NotAvailable"
                         }
                     }, function (error, results) {
-                        if (error) {
+                        // each code except already deleted .
+                        if (error && error['errors']['0']['ErrorCode']!='1047') {
                           console.log("error in deleting item: "+req.session.itemId);
                             res.status(400).send(JSON.stringify(error))
                         }
                         else{
+
                             console.log(" ##### successfully delete item for  :" + req.session.itemId);
                             //console.log(JSON.stringify(results));
+                            updateWarningItems(req.session.username,req.session.itemId);
 
                             console.log(JSON.stringify(result));
                             //res.setHeader('Content-Type', 'application/json');
@@ -309,7 +317,7 @@ router.post('/getEndAddItem', function(req, res){
                             var imgArray = [];
                             var resultArr = imgArray.concat(result2.Item['PictureDetails']['GalleryURL']).concat(result2.Item['PictureDetails']['PictureURL'])
                             //var resultArr = [];
-                            fixImagesToString(resultArr,req.session.ebayToken).then(function(result,err){
+                            fixImagesToString(resultArr,req.session.ebayToken,req.session.angle).then(function(result,err){
 
                                 if (err){
                                     console.log("error in changing images to: "+req.session.itemId);
@@ -355,6 +363,7 @@ router.post('/getEndAddItem', function(req, res){
                                             req.session.ebayToken = undefined;
                                             req.session.username = undefined;
                                             req.session.xmlJSOnRes = undefined;
+                                            req.session.angle = undefined;
                                             res.status(400).send({error: error.message});
 
                                         }
@@ -364,6 +373,7 @@ router.post('/getEndAddItem', function(req, res){
                                             req.session.xmlJSOn = undefined;
                                             req.session.itemId = undefined;
                                             req.session.ebayToken = undefined;
+                                            req.session.angle = undefined;
                                             req.session.xmlJSOnRes = undefined;
 
                                             console.log(JSON.stringify(results));
@@ -386,6 +396,18 @@ router.post('/getEndAddItem', function(req, res){
     });
 });
 
+router.get('/getMyWarningItems',function(req,res){
+    console.log('get my warning items : '+req.user.username);
+
+    User.getUserByUsername(req.user.username, function (err, user) {
+        if (err) res.send(err);
+        if (user) {
+            //user.update({$addToSet : {"excludedItems":[]}},false,true)
+            var arr = user._doc.WarningItems;
+            res.json(arr);
+        }
+    });
+});
 
 
 router.get('/getMyStores',function(req,res){
@@ -637,6 +659,41 @@ router.get('/fetchMyToken',function(req,res){
 
 });
 
+router.post('/resetEmailPassword',function(req,res){
+    var email = req.body.email;
+    User.getUserByEmail(email,function(err,user){
+        if (err){
+            res.status(400).send("no such email , try again");
+        }
+        else{
+            var password = generator.generate({
+                length: 10,
+                numbers: true
+            });
+            console.log("password of user : "+user.email +"has been reset to :"+password);
+            // send messege to the user by python email .
+
+            bcrypt.genSalt(10, function(err, salt) {
+                bcrypt.hash(password, salt, function(err, hash) {
+                    if (err){
+                        console.log(JSON.stringify(err));
+                        res.status(400).send("couldn't create password , try again");
+                    }
+                    else {
+                        user.update({$set: {"password": hash}}, function (err, user) {
+                            if (err) {
+                                console.log(JSON.stringify(err));
+                                res.status(400).send("couldn't create password , try again");
+                            }
+                            console.log("updated password succesfully ");
+                            res.send("new password saved successfullly");
+                        });
+                    }
+                });
+            });
+        }
+    })
+});
 
 
 
@@ -690,7 +747,7 @@ router.post('/fetchToken', function(req, res){
                     }
                     else if (userEmail ) {
                         res.render('register', {
-                            errors: [{msg: "user name already exist choose  another one"}]
+                            errors: [{msg: "email already exist choose  another one"}]
                         });
                     }
                     else{
@@ -932,7 +989,7 @@ router.get('/days',function(req,res){
 });
 
 router.get('/updateDays',function(req,res){
-  console.log("value to update : "+req.query.value);
+  console.log("value to update : "+req.user.username +","+req.query.value);
 
     User.getUserByUsername(req.user.username, function (err, user) {
         if (err) res.send(err);
@@ -947,6 +1004,39 @@ router.get('/updateDays',function(req,res){
                 }
                 console.log("updated days : "+req.query.value);
                 res.json(JSON.stringify('days updated to :'+req.query.value));
+            });
+        }
+    });
+});
+
+router.get('/Angle',function(req,res){
+    console.log('get angle: '+req.user.username );
+
+    User.getUserByUsername(req.user.username, function (err, user) {
+        if (err) res.send(err);
+        if (user) {
+            //user.update({$addToSet : {"excludedItems":[]}},false,true)
+            res.json(user._doc.angleToChange);
+        }
+    });
+});
+
+router.get('/updateAngle',function(req,res){
+    console.log("value to update : "+req.user.username +","+req.query.value);
+
+    User.getUserByUsername(req.user.username, function (err, user) {
+        if (err) res.send(err);
+        if (user) {
+            var num = parseInt(req.query.value);
+            user.update({$set : {"angleToChange":num}},function(err,user){
+                if (err) {
+                    console.log(JSON.stringify(err));
+                    res.render('index', {
+                        errors: err
+                    });
+                }
+                console.log("updated angle : "+req.query.value);
+                res.json(JSON.stringify('angle updated to :'+req.query.value));
             });
         }
     });
@@ -1070,7 +1160,7 @@ function uploadToEbay(itemid,ebayToken,imageString){
 
 }
 
-var fixImagesToString = function(imgArray,ebayToken){
+var fixImagesToString = function(imgArray,ebayToken,angle){
 
 
 
@@ -1082,6 +1172,7 @@ var fixImagesToString = function(imgArray,ebayToken){
     }
     else {
         var createJson = {};
+        createJson['angle'] = angle;
         createJson['ebayToken'] = ebayToken;
         createJson['images'] = [];
         var k = 0;
@@ -1356,7 +1447,7 @@ var taskA = function(){
                     if (error) {
                         console.log("failure : " + error.message);
                     }
-                    else {
+                    else if (results.Items.length > 0 ) {
                         console.log("start checking for user: " + results.args['username']);
                         console.log(JSON.stringify(results.Items));
                         var PromiseArray = [];
@@ -1364,15 +1455,16 @@ var taskA = function(){
                         results.Items = results.Items[0];
                         console.log("only running for one item : "+results.Items['ItemID']);
 //                        results.Items['ItemID'] = '182514295780';
-//                        results.Items['ItemID'] = '192147589466';
+                        results.Items['ItemID'] = '192148140916';
+
                         if (!(results.Items instanceof Array)) {
-                            createRequest(urlProductionDomain + '/getEndAddItem', results.Items, results);
+                            createRequest(urlToUse + '/getEndAddItem', results.Items, results);
                         }
 
                         else if (results.Items.length > 0) {
                             for (var i in results.Items) {
                                 var item = results.Items[i];
-                                createRequest(urlProductionDomain + '/getEndAddItem', item, results);
+                                createRequest(urlToUse + '/getEndAddItem', item, results);
                             }
                         }
 
@@ -1421,7 +1513,8 @@ function createRequest(url,item,results){
                 request({
                     url: url,
                     method: "POST",
-                    json: {itemId:item['ItemID'],authToken:results.args['Token'],username:results.args['username']}
+                    json: {itemId:item['ItemID'],authToken:results.args['Token'],username:results.args['username'],angle:
+                    results.args['angleToChange']}
                 },  function (error, resp, body) {
                     if (error){
                         console.log("error : " +JSON.stringify(error)+"in item : "+item['ItemID']);
@@ -1466,6 +1559,21 @@ function updateRevokedItems(username,revokeditem,newitem) {
         if (user) {
             //user.update({$addToSet : {"excludedItems":[]}},false,true)
             user.update({$addToSet: {'RevokedItems': {revokeditem:revokeditem, newitem: newitem}}}, function (err, user) {
+                if (err) {
+                    return JSON.stringify(err)
+                }
+                return "success";
+            });
+        }
+    });
+}
+
+function updateWarningItems(username,item) {
+    User.getUserByUsername(username, function (err, user) {
+        if (err) return JSON.stringify(err);
+        if (user) {
+            //user.update({$addToSet : {"excludedItems":[]}},false,true)
+            user.update({$addToSet: {'WarningItems': item}}, function (err, user) {
                 if (err) {
                     return JSON.stringify(err)
                 }
