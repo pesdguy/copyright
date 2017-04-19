@@ -22,6 +22,7 @@ var sleep = require('sleep');
 var   _ = require('lodash');
 var generator = require('generate-password');
 var bcrypt = require('bcryptjs');
+var json2csv = require('json2csv');
 
 
 
@@ -84,6 +85,30 @@ router.get('/failure', function(req, res){
     req.session.destroy();
 
     res.redirect('/users/login');
+});
+
+router.get('/revokedItems', function(req, res){
+    var fields = ['revokeditem', 'newitem'];
+
+    User.getUserByUsername(req.user.username, function (err, user) {
+        if (err) res.send(err);
+        if (user) {
+            //user.update({$addToSet : {"excludedItems":[]}},false,true)
+            var arr = user._doc.RevokedItems;
+
+            try {
+                var result = json2csv({ data: arr, fields: fields });
+                console.log(result);
+                res.json(result)
+            } catch (err) {
+                // Errors are thrown for bad options, or if the data is empty and no fields are provided.
+                // Be sure to provide fields if it is possible that your data array will be empty.
+                console.error(err);
+
+            }
+
+        }
+    });
 });
 
 router.get('/blacklist', function(req, res){
@@ -671,7 +696,22 @@ router.post('/resetEmailPassword',function(req,res){
                 numbers: true
             });
             console.log("password of user : "+user.email +"has been reset to :"+password);
-            // send messege to the user by python email .
+
+            var options = {
+                args: [user.username,user.email,"email reset password","your password has been reset to: "+password]
+            };
+
+            PythonShell.run('sendemail.py', options, function (err, results) {
+                if (err) {
+                    console.log(err);
+                   // res.sendStatus(400);
+                }
+                else {
+                    // results is an array consisting of messages collected during execution
+                    console.log('results: %j', results);
+                   // res.sendStatus(200);
+                }
+            });
 
             bcrypt.genSalt(10, function(err, salt) {
                 bcrypt.hash(password, salt, function(err, hash) {

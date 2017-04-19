@@ -46,7 +46,7 @@
                     type: 'post',
                     url: '/getMyEbay',
                     success: function (data) {
-                        alert('form was submitted:'+ data);
+                        //alert('form was submitted:'+ data);
                         window.open("https://signin.ebay.com/ws/eBayISAPI.dll?SignIn&RUName=G_DEALS-GDEALSc7f-43c1--ettpmtmup&SessID=" + data.toString());
                     }
                 });
