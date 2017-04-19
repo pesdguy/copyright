@@ -41,7 +41,7 @@ var sandBoxValue = false;
 var urlLocalDomain = "http://localhost:3000";
 var urlProductionDomain = "http://52.36.175.57:3000";
 
-var urlToUse = urlProductionDomain;
+var urlToUse = urlLocalDomain;
 
 
 // Get Homepage
@@ -304,8 +304,6 @@ router.post('/getEndAddItem', function(req, res){
 
                             console.log(" ##### successfully delete item for  :" + req.session.itemId);
                             //console.log(JSON.stringify(results));
-                            updateWarningItems(req.session.username,req.session.itemId);
-
                             console.log(JSON.stringify(result));
                             //res.setHeader('Content-Type', 'application/json');
                             var ItemJson = JSON.stringify(result);
@@ -393,6 +391,14 @@ router.post('/getEndAddItem', function(req, res){
 
                                         }
                                         else {
+                                            checkIfBlackList(aString).then(function(result,err){
+                                                if (result == true){
+                                                    updateWarningItems(req.session.username,results.ItemID);
+                                                }
+                                                else if (err){
+                                                    console.log("error in checking warning :"+err);
+                                                }
+                                            });
                                             updateRevokedItems(req.session.username, req.session.itemId, results.ItemID)
                                             req.session.username = undefined;
                                             req.session.xmlJSOn = undefined;
@@ -735,6 +741,116 @@ router.post('/resetEmailPassword',function(req,res){
     })
 });
 
+
+
+router.get('/resetEmailPassword',function(req,res){
+    var email = req.query.email;
+    User.getUserByEmail(email,function(err,user){
+        if (err || !user){
+            res.status(400).send("no such email , try again");
+        }
+        else{
+            var password = generator.generate({
+                length: 10,
+                numbers: true
+            });
+            console.log("password of user : "+user.email +"has been reset to :"+password);
+
+            var options = {
+                args: [user.username,user.email,"email reset password","your password has been reset to: "+password]
+            };
+
+            PythonShell.run('sendemail.py', options, function (err, results) {
+                if (err) {
+                    console.log(err);
+                    // res.sendStatus(400);
+                }
+                else {
+                    // results is an array consisting of messages collected during execution
+                    console.log('results: %j', results);
+                    // res.sendStatus(200);
+                }
+            });
+
+            bcrypt.genSalt(10, function(err, salt) {
+                bcrypt.hash(password, salt, function(err, hash) {
+                    if (err){
+                        console.log(JSON.stringify(err));
+                        res.status(400).send("couldn't create password , try again");
+                    }
+                    else {
+                        user.update({$set: {"password": hash}}, function (err, user) {
+                            if (err) {
+                                console.log(JSON.stringify(err));
+                                res.status(400).send("couldn't create password , try again");
+                            }
+                            console.log("updated password succesfully ");
+                            res.send("new password saved successfullly");
+                        });
+                    }
+                });
+            });
+        }
+    })
+});
+
+
+
+
+function checkIfBlackList(aString){
+
+    var defer = Q.defer();
+
+    var lineReader = require('readline').createInterface({
+        input: require('fs').createReadStream('blacklisted.txt')
+    });
+
+    var failedBool = false;
+    var lineno = 1 ;
+
+    lineReader.on('line', function (line) {
+
+
+        if (aString.toLowerCase().indexOf(line.toString().toLowerCase()) > -1){
+            failedBool = true;
+            lineReader.close();
+        }
+
+        if (lineno >= 4096) {
+            lineReader.close();
+        }
+
+        lineno++;
+        //console.log(lineno);
+    });
+
+    lineReader.on('error', function (error) {
+        defer.reject(error);
+    });
+    lineReader.on('close',function(){
+        if (!failedBool)
+            defer.resolve(false)
+        defer.resolve(true)
+    });
+
+    return defer.promise;
+}
+
+router.get('/checkBlack',function(req,res){
+
+    var aString = req.query.value;
+    checkIfBlackList(aString).then(function(result,err){
+        if (result == true){
+            res.json({result:true})
+        }
+        else if (result == false){
+            res.json({result:false})
+        }
+        else {
+            res.status(400).send({error:value})
+        }
+    });
+});
 
 
 

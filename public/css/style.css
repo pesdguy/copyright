@@ -97,3 +97,36 @@ footer{
 #angleSlider .slider-selection {
   background: #BABABA;
 }
+
+.modal-footer {   border-top: 0px; }
+
+hr.style18 {
+  border-top: 1px solid #8c8b8b;
+  text-align: center;
+}
+hr.style18:after {
+  content: 'post listing configuration';
+  display: inline-block;
+  position: relative;
+  top: -14px;
+  padding: 0px 10px;
+  background: #FFFFFF;
+  /*color: #8c8b8b;*/
+  font-size: 18px;
+}
+
+hr.style17 {
+  border-top: 1px solid #8c8b8b;
+  text-align: center;
+
+}
+hr.style17:after {
+  content: 'pre listing configuration';
+  display: inline-block;
+  position: relative;
+  top: -14px;
+  padding: 0px 15px;
+  background: #FFFFFF;
+  /*color: #8c8b8b;*/
+  font-size: 18px;
+}
