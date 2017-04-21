@@ -10,8 +10,11 @@ var Cookies = require( "cookies" )
 var User = require('../models/user');
 
 // Register
-router.get('/register', function(req, res){
+router.get('/register', function(req, res,next){
+    if (req.session.callbackUrl)
     res.render('register');
+    else
+        res.status(400).send("no callback configured");
 });
 
 // Login

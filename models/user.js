@@ -45,6 +45,9 @@ var UserSchema = mongoose.Schema({
     WarningItems:{
         type: Array , "default":[]
     },
+    callbackUrl:{
+        type:String
+    },
     ebayTokens:{
         type : Array , "default" : []
     }

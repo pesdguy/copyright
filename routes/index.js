@@ -25,8 +25,6 @@ var bcrypt = require('bcryptjs');
 var json2csv = require('json2csv');
 
 
-
-
 // production
 var devID = "c2b22d98-bf63-4370-ae1c-409f2021c579";
 var certID = "261cb415-2bb3-48bf-8648-e9efc1581f16";
@@ -41,7 +39,7 @@ var sandBoxValue = false;
 var urlLocalDomain = "http://localhost:3000";
 var urlProductionDomain = "http://52.36.175.57:3000";
 
-var urlToUse = urlLocalDomain;
+var urlToUse = urlProductionDomain;
 
 
 // Get Homepage
@@ -51,15 +49,37 @@ router.get('/', ensureAuthenticated, function(req, res){
 });
 
 
+router.post('/configCallbackUrl',function(req,res){
+    if (req.body.callbackUrl){
+        req.session.callbackUrl = req.body.callbackUrl;
+        res.send("");
+    }
+    else{
+        res.status(400).send("missing callBackUrl parameter");
+    }
+});
+
+router.get('/configCallbackUrl',function(req,res){
+    if (req.query.callbackUrl){
+        req.session.callbackUrl = req.query.callbackUrl;
+        res.redirect('/');
+    }
+    else{
+        res.status(400).send("missing callBackUrl parameter");
+    }
+});
+
+
 router.get('/success', function(req, res){
 
     var newUser = new User({
         name: req.session.name,
         email:req.session.email,
         username: req.session.username,
-        ebayToken: req.session.ebayToken,
+        ebayTokens: [req.session.ebayToken],
         password: req.session.password,
-        transactionId:req.query['auth']
+        transactionId:req.query['auth'],
+        callbackUrl:req.session.callbackUrl
     });
     User.createUser(newUser, function(err, user){
         if(err) res.send(err);
@@ -70,7 +90,8 @@ router.get('/success', function(req, res){
     req.flash('success_msg', 'You have been registered ');
 
     req.session.destroy();
-
+    // if user has been added start task.
+    taskA();
 
     // need to add the session to data base.
     res.redirect('/users/login');
@@ -243,6 +264,8 @@ router.post('/getEndAddItem', function(req, res){
     req.session.itemId = itemId;
     req.session.ebayToken = ebayToken;
     req.session.username = req.body.username;
+    req.session.title = undefined;
+    req.session.description = undefined;
 
     ebay.xmlRequest({
         serviceName : 'Trading',
@@ -312,6 +335,10 @@ router.post('/getEndAddItem', function(req, res){
                            // result2['Item']['ShippingPackageDetails']['ShippingPackage'] = 'Letter';
 
                             // changing description and title .
+
+                            req.session.description = result2['Item']['Description'];
+                            req.session.title = result2['Item']['Title'];
+
                             if (result2['Item']['Description'].includes(".")){
                                 result2['Item']['Description'].replace(".","");
                             }
@@ -387,19 +414,33 @@ router.post('/getEndAddItem', function(req, res){
                                             req.session.username = undefined;
                                             req.session.xmlJSOnRes = undefined;
                                             req.session.angle = undefined;
+                                            req.session.title = undefined;
+                                            req.session.description = undefined;
                                             res.status(400).send({error: error.message});
 
                                         }
                                         else {
-                                            checkIfBlackList(aString).then(function(result,err){
-                                                if (result == true){
-                                                    updateWarningItems(req.session.username,results.ItemID);
-                                                }
-                                                else if (err){
-                                                    console.log("error in checking warning :"+err);
-                                                }
-                                            });
-                                            updateRevokedItems(req.session.username, req.session.itemId, results.ItemID)
+                                            if (req.session.username) {
+                                                checkIfBlackList(req.session.description).then(function (result, err) {
+                                                    if (result == true) {
+                                                        updateWarningItems(req.session.username, results.ItemID);
+                                                    }
+                                                    if (result == false) {
+                                                        checkIfBlackList(req.session.title).then(function (res, error) {
+                                                            if (res == true) {
+                                                                updateWarningItems(req.session.username, results.ItemID);
+                                                            }
+                                                            else if (error) {
+                                                                console.log(JSON.stringify(error));
+                                                            }
+                                                        })
+                                                    }
+                                                    else if (err) {
+                                                        console.log("error in checking warning :" + JSON.stringify(err));
+                                                    }
+                                                });
+                                                updateRevokedItems(req.session.username, req.session.itemId, results.ItemID);
+                                            }
                                             req.session.username = undefined;
                                             req.session.xmlJSOn = undefined;
                                             req.session.itemId = undefined;
@@ -416,9 +457,6 @@ router.post('/getEndAddItem', function(req, res){
                                 }
 
                             });
-
-
-
                         }
                     });
                 }
@@ -486,6 +524,108 @@ router.get('/getMyStores',function(req,res){
         }
     });
 });
+
+
+
+function isStoreNameExist(storeName,count){
+
+    console.log(count);
+    var deferred = Q.defer();
+    var stream = User.User.find().stream();
+    var numOfUser = 0;
+
+    stream.on('data', function (doc) {
+        if (doc._doc.ebayTokens) {
+            var arrOfToken = doc._doc.ebayTokens;
+            var len = arrOfToken.length;
+            numOfUser++;
+            var i = 0;
+            arrOfToken.forEach(function (ebayToken) {
+                var user = {};
+                user.ebayToken = ebayToken;
+                var docAndToken = _.extend({i:i,numOfUser:numOfUser,len:len,Token: ebayToken}, doc._doc);
+                ///  		console.log(doc._doc.token);
+                console.log("start checking for user: " + doc._doc.username);
+
+                ebay.xmlRequest({
+                    serviceName: 'Trading',
+                    opType: 'GetStore',
+
+                    // app/environment
+                    devId: devID,
+                    certId: certID,
+                    appId: appID,
+                    sandbox: sandBoxValue,
+                    args: docAndToken,
+
+                    // per user
+                    authToken: ebayToken,
+                    params: {}
+                }, function (error, results) {
+                    if (error) {
+                        deferred.reject(error);
+                    }
+                    else if (results['Store']['Name'] == storeName) {
+                        deferred.resolve(results.args);
+                    }
+                    else if (results.args.numOfUser == count && results.args.i == results.args.len-1){
+                        deferred.resolve(false);
+                    }
+                });
+                i++;
+            });
+        }
+        // do something with the mongoose document
+    }).on('error', function (err) {
+        console.log ("###### error in checking all customers "+JSON.stringify(err));
+
+        // handle the error
+    }).on('close', function () {
+        console.log ("###### finished checking all customers ");
+        // the stream is closed
+    });
+
+    return deferred.promise;
+
+}
+
+router.post('/isStoreExist',function(req,res){
+    var storeName = req.body.storeName;
+    User.User.count({}, function( err, count){
+
+        isStoreNameExist(storeName.toLowerCase(),count).then(function (result, error) {
+                if (result == false)
+                    res.json({'exist': false});
+                else if (result)
+                    res.json({'exist': result});
+                else {
+                    res.json(error);
+                }
+            });
+    })
+});
+
+function returnStoreToken(storeName){
+
+    var defer = Q.defer();
+
+    User.User.count({}, function( err, count){
+
+        isStoreNameExist(storeName.toLowerCase(),count).then(function (result, error) {
+            if (result == false)
+                defer.resolve(false);
+            else if (result)
+                defer.resolve(result);
+            else {
+                 defer.reject({error:error});
+            }
+        });
+    })
+
+    return defer.promise;
+}
+
+
 
 // router.get('/addStore',function(req,res){
 //     console.log('building table for  new token id : '+req.user.username);
@@ -836,6 +976,48 @@ function checkIfBlackList(aString){
     return defer.promise;
 }
 
+
+function checkIfBlackListAndReturnExpression(aString){
+
+    var defer = Q.defer();
+
+    var lineReader = require('readline').createInterface({
+        input: require('fs').createReadStream('blacklisted.txt')
+    });
+
+    var failedBool = false;
+    var lineno = 1 ;
+    var exp = undefined;
+
+    lineReader.on('line', function (line) {
+
+
+        if (aString.toLowerCase().indexOf(line.toString().toLowerCase()) > -1){
+            failedBool = true;
+            exp = aString;
+            lineReader.close();
+        }
+
+        if (lineno >= 4096) {
+            lineReader.close();
+        }
+
+        lineno++;
+        //console.log(lineno);
+    });
+
+    lineReader.on('error', function (error) {
+        defer.reject(error);
+    });
+    lineReader.on('close',function(){
+        if (!failedBool)
+            defer.resolve(false);
+        defer.resolve(exp)
+    });
+
+    return defer.promise;
+}
+
 router.get('/checkBlack',function(req,res){
 
     var aString = req.query.value;
@@ -847,11 +1029,69 @@ router.get('/checkBlack',function(req,res){
             res.json({result:false})
         }
         else {
-            res.status(400).send({error:value})
+            res.status(400).send({error:err})
         }
     });
 });
 
+router.post('/ImageAndBlacklist',function(req,res){
+
+    var description = req.body.description;
+    var title = req.body.title;
+    var images = req.body.images;
+    var storeName = req.body.storeName;
+
+    returnStoreToken(storeName).then(function(resultArgs,error){
+        if (error){
+            res.status(400).send({error:error})
+        }
+        else if (resultArgs == false){
+            res.status(400).send({error:"no such user logged to the system"});
+        }
+        else{
+            checkIfBlackListAndReturnExpression(description).then(function(result,err){
+                // if error return error .
+                if (err){
+                    res.status(400).send({error:err})
+                }
+                else if (result == false){
+                    checkIfBlackListAndReturnExpression(title).then(function(result,err){
+                        if (err){
+                            res.status(400).send({error:err})
+                        }
+                        else if (result == false){
+                            fixImagesToString3(images,resultArgs['angleToChange']).then(function(result,error){
+                                res.json({exist:false,images:result})
+                            },function(error){
+                                if (error){
+                                    res.status(400).send({error:error})
+                                }
+                            })
+                        }
+                        else {
+                            var phrase = result;
+                            fixImagesToString3(images,resultArgs['angleToChange']).then(function(result){
+                                res.json({exist:true,phrase:phrase,images:result})
+                            },function(error){
+                                res.status(400).send({error:error})
+                            })
+
+                        }
+                    });
+                }
+                else {
+                    var phrase = result;
+                    fixImagesToString3(images,resultArgs['angleToChange']).then(function(result){
+
+                        res.json({exist:true,phrase:phrase,images:result})
+                    },function(error){
+                        res.status(400).send({error:error})
+                    })
+                }
+            });
+        }
+    });
+});
 
 
 router.post('/fetchToken', function(req, res){
@@ -1197,6 +1437,32 @@ router.get('/updateAngle',function(req,res){
         }
     });
 });
+//fixme:add support for changing callback.
+// router.post('/updateCallBackUrl',function(req,res){
+//     //console.log("value to update : "+req.user.username +","+req.query.value);
+//     var oldCallbackUrl = req.body.oldCallbackUrl;
+//     var newCallbackUrl = req.body.newCallbackUrl;
+//
+//
+//
+//
+//     User.getUserByUsername(req.user.username, function (err, user) {
+//         if (err) res.send(err);
+//         if (user) {
+//             var num = parseInt(req.query.value);
+//             user.update({$set : {"angleToChange":num}},function(err,user){
+//                 if (err) {
+//                     console.log(JSON.stringify(err));
+//                     res.render('index', {
+//                         errors: err
+//                     });
+//                 }
+//                 console.log("updated angle : "+req.query.value);
+//                 res.json(JSON.stringify('angle updated to :'+req.query.value));
+//             });
+//         }
+//     });
+// });
 
 
 //update the excluded token
@@ -1353,6 +1619,38 @@ var fixImagesToString = function(imgArray,ebayToken,angle){
 
     return deferred.promise;
 }
+
+
+var fixImagesToString3 = function(imgJson,angle){
+    var deferred = Q.defer();
+
+    var createJson = {};
+    createJson['angle'] = angle;
+    createJson['images'] = imgJson;
+
+    var options = {
+        args: JSON.stringify(createJson)
+    };
+    var resArr = [];
+    PythonShell.run('rotate3.py', options, function (err, results) {
+        if (err) {
+            console.log(err);
+            deferred.reject("cannot convert the given pictures");
+        }
+        else {
+            var tempArr = results.toString().replace("[","").replace("]","").split(",");
+            for (var i in imgJson) {
+                var item = {};
+                item['image_name'] = imgJson[i]['image_name'];
+                item['image_base64'] = tempArr[i];
+                resArr.push(item);
+            }
+            deferred.resolve(resArr);
+        }
+    });
+
+    return deferred.promise;
+};
 //
 // // sequently uploading images  , to imagur
 // function uploadImageflicker(filePath) {
@@ -1552,6 +1850,14 @@ module.exports = router;
 
 // Configuration
 
+router.post('/testing/updateStatus',function(req,res){
+    //console.log(req);
+    //console.log(res);
+    res.json({success:"success"})
+});
+
+
+
 router.get('/startTask',function(req,res){
     taskA();
     res.send(200);
@@ -1674,11 +1980,37 @@ function createRequest(url,item,results){
                 },  function (error, resp, body) {
                     if (error){
                         console.log("error : " +JSON.stringify(error)+"in item : "+item['ItemID']);
+                        request({
+                            url: results.args['callbackUrl']+'/updateStatus',
+                            method: "POST",
+                            json: {error:error}
+                        },  function (error, resp, body) {
+                            if (error){
+                                console.log("error in listing the item to callback");
+                            }
+                            else{
+                                console.log("item listed successfully to callback");
+                            }
+                        });
                         deferred.reject(new Error(error));
                     }
                     else {
                         deferred.resolve("success for item : "+item.ItemID);
                         console.log("success for item : "+item.ItemID);
+                        request({
+                            url: results.args['callbackUrl']+'/updateStatus',
+                            method: "POST",
+                            json: {itemID:item.ItemID,responeJson:resp}
+                        },  function (error, resp, body) {
+                            if (error){
+                                console.log("error in listing the item to callback");
+                            }
+                            else{
+                                console.log("item listed successfully to callback");
+                            }
+                        });
+
+
                     }
                 });
             }
@@ -1686,6 +2018,25 @@ function createRequest(url,item,results){
     });
     return deferred.promise;
 }
+
+router.get('/testing',function(req,res){
+    var item = "asdad";
+    var resp = "bbb";
+    request({
+        url: config.callBackUrl+'/updateStatus',
+        method: "POST",
+        json: {itemID:item,responeJson:resp}
+    },  function (error, resp, body) {
+        if (error){
+            res.status(400).send(error);
+            console.log("error in listing the item to callback");
+        }
+        else{
+            res.send("success");
+            console.log("item listed successfully to callback");
+        }
+    });
+});
 
 
 function goToPath(array,path){
