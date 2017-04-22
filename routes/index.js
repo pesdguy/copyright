@@ -91,7 +91,9 @@ router.get('/success', function(req, res){
 
     req.session.destroy();
     // if user has been added start task.
-    taskA();
+
+    //fixme: add task after addking of new user
+    //taskA();
 
     // need to add the session to data base.
     res.redirect('/users/login');
