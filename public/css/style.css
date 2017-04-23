@@ -108,11 +108,11 @@ hr.style18:after {
   content: 'post listing configuration';
   display: inline-block;
   position: relative;
-  top: -14px;
+  top: -25px;
   padding: 0px 10px;
   background: #FFFFFF;
   /*color: #8c8b8b;*/
-  font-size: 18px;
+  font-size: 30px;
 }
 
 hr.style17 {
@@ -124,9 +124,9 @@ hr.style17:after {
   content: 'pre listing configuration';
   display: inline-block;
   position: relative;
-  top: -14px;
+  top: -25px;
   padding: 0px 15px;
   background: #FFFFFF;
   /*color: #8c8b8b;*/
-  font-size: 18px;
+  font-size: 30px;
 }
