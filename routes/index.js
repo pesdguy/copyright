@@ -371,12 +371,7 @@ router.post('/getEndAddItem', function(req, res){
                             //var resultArr = [];
                             fixImagesToString(resultArr,req.session.ebayToken,req.session.angle).then(function(result,err){
 
-                                if (err){
-                                    console.log("error in changing images to: "+req.session.itemId);
-                                    res.status(400).send({error:err});
-                                }
 
-                                else {
                                     var tempArr = result.toString().replace("[","").replace("]","").split(",")
                                     for (var i in tempArr) {
                                         tempArr[i] = tempArr[i].replace("\'","").replace("u","").replace("\'","").replace(" ","")
@@ -456,8 +451,11 @@ router.post('/getEndAddItem', function(req, res){
                                         }
                                     });
 
+                            },function(error){
+                                if (error){
+                                    console.log("error in changing images to: "+req.session.itemId);
+                                    res.status(400).send({error:err});
                                 }
-
                             });
                         }
                     });
@@ -1852,7 +1850,7 @@ module.exports = router;
 
 // Configuration
 
-router.post('/testing/updateStatus',function(req,res){
+router.post('/updateStatus',function(req,res){
     //console.log(req);
     //console.log(res);
     res.json({success:"success"})
@@ -1916,20 +1914,43 @@ var taskA = function(){
                         console.log(JSON.stringify(results.Items));
                         var PromiseArray = [];
 
-                        results.Items = results.Items[0];
-                        console.log("only running for one item : "+results.Items['ItemID']);
+                        //results.Items = results.Items[0];
+                        //console.log("only running for one item : "+results.Items['ItemID']);
 //                        results.Items['ItemID'] = '182514295780';
-                        results.Items['ItemID'] = '192148140916';
+                        //results.Items['ItemID'] = '192148140916';
 
                         if (!(results.Items instanceof Array)) {
                             createRequest(urlToUse + '/getEndAddItem', results.Items, results);
                         }
 
                         else if (results.Items.length > 0) {
-                            for (var i in results.Items) {
-                                var item = results.Items[i];
-                                createRequest(urlToUse + '/getEndAddItem', item, results);
-                            }
+
+                            //fixme : make it configurable.
+                            // for (var i in results.Items) {
+                            //     var item = results.Items[i];
+                            //     createRequest(urlToUse + '/getEndAddItem', item, results);
+                            // }
+                            createRequestSeq(urlToUse + '/getEndAddItem',results.Items,results).then(function(resultFromSeq){
+                                console.log('######## finished all items for user'+results.args['username']);
+                            }).catch(function(error){
+                                console.log('######## error in items for '+results.args['username']);
+
+                                var options = {
+                                    args: [results.args['username'],'jonyster@gmail.com',"Error in item"+error['itemid'],"Error Details: "+JSON.stringify(error)]
+                                };
+
+                                PythonShell.run('sendemail.py', options, function (err, results) {
+                                    if (err) {
+                                        console.log(err);
+                                        // res.sendStatus(400);
+                                    }
+                                    else {
+                                        // results is an array consisting of messages collected during execution
+                                        console.log('results: %j', results);
+                                        // res.sendStatus(200);
+                                    }
+                                });
+                            });
                         }
 
 
@@ -1961,6 +1982,35 @@ var taskA = function(){
 
 };
 
+var createRequestSeq = function (url,resultsArr,results){
+    return resultsArr.reduce(function(p, item) {
+        return p.then(function(){
+
+            // if (item['UPC'].length < 12 )
+            //     itemToSearch = '0'+item['UPC'];
+            //itemToSearch = item['UPC'];
+            return createRequest(url,item,results)
+                .then(function(resultsA){
+                        if (resultsA) {
+                            console.log(item['ItemID'] +' listed  and sent to callback successfully.');
+                            //throw {error:"error detail example",itemid:item['ItemID']};
+                        }
+                    },function (err) {
+                    console.log("error in itemid "+item['ItemID']+"for user"+item['username']);
+                        // will be called if the promise is rejected, or the 10 second timeout occurs
+                    err['itemid'] = item['ItemID'];
+                    throw err;
+                    }
+                ).catch(function(err){
+                    console.log("error in itemid "+item['ItemID']+"for user"+item['username']);
+                    console.log(JSON.stringify(err));
+
+                    err['itemid'] = item['ItemID'];
+                    throw err;
+                });
+        });
+    },Promise.resolve()); // initial
+};
 
 function createRequest(url,item,results){
 
@@ -1988,16 +2038,21 @@ function createRequest(url,item,results){
                             json: {error:error}
                         },  function (error, resp, body) {
                             if (error){
-                                console.log("error in listing the item to callback");
+                                console.log("error in notify about bad item to callback");
+                                deferred.reject({error:"item failed to be listed , and monitor was not notified"});
                             }
                             else{
-                                console.log("item listed successfully to callback");
+                                if (resp.statusCode !== 200) {
+                                    deferred.reject({error:" item failed to be listed ,failed in calling callback bad status code "+resp.statusCode});
+                                }
+                                else {
+                                    deferred.reject({error:" item failed to be listed , monitor notified"});
+                                    console.log("item failed to be listed , monitor notified");
+                                }
                             }
                         });
-                        deferred.reject(new Error(error));
                     }
                     else {
-                        deferred.resolve("success for item : "+item.ItemID);
                         console.log("success for item : "+item.ItemID);
                         request({
                             url: results.args['callbackUrl']+'/updateStatus',
@@ -2005,14 +2060,20 @@ function createRequest(url,item,results){
                             json: {itemID:item.ItemID,responeJson:resp}
                         },  function (error, resp, body) {
                             if (error){
+                                deferred.reject({error:"error in calling to callback on success item"});
+
                                 console.log("error in listing the item to callback");
                             }
                             else{
-                                console.log("item listed successfully to callback");
+                                if (resp.statusCode !== 200) {
+                                    deferred.reject({error:" failed in calling callback bad status code "+resp.statusCode});
+                                }
+                                else {
+                                    deferred.resolve("success for item : " + item.ItemID);
+                                    console.log("item listed successfully to callback");
+                                }
                             }
                         });
-
-
                     }
                 });
             }
